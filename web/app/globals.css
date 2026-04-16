@@ -339,6 +339,19 @@ a {
   gap: 14px;
 }
 
+.generated-app-card {
+  --accent-local: var(--app-accent, var(--accent));
+}
+
+.generated-app-card .micro-button,
+.generated-app-card .segmented button.active {
+  background: var(--accent-local);
+}
+
+.generated-app-card .micro-button:hover {
+  opacity: 0.92;
+}
+
 .micro-top {
   display: grid;
   gap: 10px;
@@ -440,6 +453,45 @@ a {
 .micro-list-row div {
   display: grid;
   gap: 4px;
+}
+
+.generated-hero {
+  display: grid;
+  gap: 6px;
+}
+
+.focus-strip {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.focus-strip span {
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--app-accent, var(--accent)) 18%, white);
+  background: color-mix(in srgb, var(--app-accent, var(--accent)) 8%, white);
+  color: var(--text);
+  padding: 8px 12px;
+  font-size: 0.84rem;
+}
+
+.generated-entry {
+  display: grid;
+  gap: 12px;
+}
+
+.entry-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.entry-field {
+  display: grid;
+  gap: 2px;
+}
+
+.entry-field small {
+  color: var(--muted);
 }
 
 .polaroid-preview {

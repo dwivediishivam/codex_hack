@@ -6,6 +6,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 
 type Tab = "Create" | "Apps" | "Guide" | "Store" | "Profile";
 type StoreCategory = "All" | "Finance" | "Creative";
+type BuildStep = "Thinking" | "Planning" | "Building" | "Finishing";
 
 type CatalogApp = {
   id: string;
@@ -13,7 +14,6 @@ type CatalogApp = {
   summary: string;
   detail: string;
   category: Exclude<StoreCategory, "All">;
-  prompt: string;
   route: string;
 };
 
@@ -21,28 +21,15 @@ type OwnedApp = {
   id: string;
   name: string;
   summary: string;
-  prompt: string;
   route: string;
   source: "store" | "created";
 };
 
-type CustomAppSpec = {
-  id: string;
-  name: string;
-  summary: string;
-  prompt: string;
-  focus: string[];
-};
-
-type BuildStep = "Thinking" | "Planning" | "Building" | "Finishing";
-
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://hgwcvmkeqammsdblgezf.supabase.co",
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhnd2N2bWtlcWFtbXNkYmxnZXpmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMTc3MzYsImV4cCI6MjA5MTg5MzczNn0.ZtrDeRwRo02GctrhZyjgl01IR-2dmfc5XeODvPY2dLg"
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""
 );
 
-const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 const tabs: Tab[] = ["Create", "Apps", "Guide", "Store", "Profile"];
 
 const storeCatalog: CatalogApp[] = [
@@ -52,7 +39,6 @@ const storeCatalog: CatalogApp[] = [
     summary: "Turn any price into work hours or life hours.",
     detail: "Set your pay once, choose work time or life time, and see what a purchase really costs.",
     category: "Finance",
-    prompt: "Make a small app that shows how many hours of work or life any purchase costs.",
     route: "/micro-apps/spend-hours"
   },
   {
@@ -61,7 +47,6 @@ const storeCatalog: CatalogApp[] = [
     summary: "Make instant-film style prints from one or many photos.",
     detail: "Preview one photo, process batches, and export an A4 PDF laid out at print-friendly sizes.",
     category: "Creative",
-    prompt: "Make an app that turns photos into print-ready polaroids with a single preview and an A4 batch sheet.",
     route: "/micro-apps/polaroid-print"
   }
 ];
@@ -76,6 +61,7 @@ export default function HomePage() {
   const [authError, setAuthError] = useState("");
   const [activeTab, setActiveTab] = useState<Tab>("Create");
   const [prompt, setPrompt] = useState("");
+  const [createError, setCreateError] = useState("");
   const [appSearch, setAppSearch] = useState("");
   const [storeSearch, setStoreSearch] = useState("");
   const [storeCategory, setStoreCategory] = useState<StoreCategory>("All");
@@ -103,10 +89,10 @@ export default function HomePage() {
 
     const {
       data: { subscription }
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session?.user.email) {
-        setEmail(session.user.email);
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession);
+      if (nextSession?.user.email) {
+        setEmail(nextSession.user.email);
       }
     });
 
@@ -119,25 +105,28 @@ export default function HomePage() {
   }, [activeTab]);
 
   useEffect(() => {
-    if (!userEmail || typeof window === "undefined") {
+    if (!userEmail) {
       setOwnedApps([]);
       return;
     }
 
-    const local = readOwnedApps(userEmail);
-    setOwnedApps(local);
-
-    if (!apiBase) return;
+    const localStoreApps = readStoreApps(userEmail);
+    setOwnedApps(localStoreApps);
 
     let cancelled = false;
+
     void (async () => {
       try {
-        const response = await fetch(`${apiBase}/api/micro-apps?ownerId=${encodeURIComponent(userEmail)}`, {
+        const response = await fetch(`/api/micro-apps?ownerId=${encodeURIComponent(userEmail)}`, {
           cache: "no-store"
         });
-        if (!response.ok) return;
+
+        if (!response.ok) {
+          throw new Error("Could not load apps");
+        }
+
         const payload = (await response.json()) as {
-          items: Array<{ id: string; name: string; summary: string; deployment_url?: string | null; prompt?: string }>;
+          items: Array<{ id: string; name: string; summary: string; deployment_url?: string | null }>;
         };
 
         if (cancelled) return;
@@ -146,16 +135,15 @@ export default function HomePage() {
           id: item.id,
           name: item.name,
           summary: item.summary,
-          prompt: item.prompt ?? item.summary,
           route: item.deployment_url || `/micro-apps/custom/${item.id}`,
           source: "created" as const
         }));
 
-        const merged = mergeOwnedApps(local, remoteApps);
-        setOwnedApps(merged);
-        writeOwnedApps(userEmail, merged);
+        setOwnedApps(mergeOwnedApps(localStoreApps, remoteApps));
       } catch {
-        // Local fallback remains active for the web shell.
+        if (!cancelled) {
+          setOwnedApps(localStoreApps);
+        }
       }
     })();
 
@@ -165,8 +153,8 @@ export default function HomePage() {
   }, [userEmail]);
 
   const filteredOwnedApps = useMemo(() => {
+    const query = appSearch.trim().toLowerCase();
     return ownedApps.filter((app) => {
-      const query = appSearch.trim().toLowerCase();
       if (!query) return true;
       return app.name.toLowerCase().includes(query) || app.summary.toLowerCase().includes(query);
     });
@@ -176,8 +164,7 @@ export default function HomePage() {
     return storeCatalog.filter((app) => {
       const categoryMatch = storeCategory === "All" || app.category === storeCategory;
       const query = storeSearch.trim().toLowerCase();
-      const searchMatch =
-        !query || app.name.toLowerCase().includes(query) || app.summary.toLowerCase().includes(query);
+      const searchMatch = !query || app.name.toLowerCase().includes(query) || app.summary.toLowerCase().includes(query);
       return categoryMatch && searchMatch;
     });
   }, [storeCategory, storeSearch]);
@@ -210,57 +197,56 @@ export default function HomePage() {
     event.preventDefault();
 
     const trimmed = prompt.trim();
-    if (!trimmed || !userEmail) return;
+    if (!trimmed || !userEmail || isCreating) return;
 
+    setCreateError("");
     setIsCreating(true);
     setBuildStep("Thinking");
-    await wait(500);
-    setBuildStep("Planning");
-    await wait(700);
-    setBuildStep("Building");
 
-    const spec = buildCustomAppSpec(trimmed);
-    const ownedApp: OwnedApp = {
-      id: spec.id,
-      name: spec.name,
-      summary: spec.summary,
-      prompt: spec.prompt,
-      route: `/micro-apps/custom/${spec.id}`,
-      source: "created"
-    };
+    const interval = window.setInterval(() => {
+      setBuildStep((current) => nextBuildStep(current));
+    }, 900);
 
-    storeCustomSpec(spec);
+    try {
+      const response = await fetch("/api/micro-apps", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ownerId: userEmail,
+          prompt: trimmed
+        })
+      });
 
-    if (apiBase) {
-      try {
-        await fetch(`${apiBase}/api/micro-apps`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ownerId: userEmail,
-            name: spec.name,
-            prompt: spec.prompt,
-            visibility: "private",
-            audience: "personal",
-            category: "custom",
-            generationMode: "instant"
-          })
-        });
-      } catch {
-        // The web shell still keeps a local deployed route even when the API is unavailable.
+      const payload = (await response.json()) as {
+        error?: string;
+        app?: { id: string; name: string; summary: string; deployment_url?: string | null };
+      };
+
+      if (!response.ok || !payload.app) {
+        throw new Error(payload.error || "Could not create the app.");
       }
+
+      const ownedApp: OwnedApp = {
+        id: payload.app.id,
+        name: payload.app.name,
+        summary: payload.app.summary,
+        route: payload.app.deployment_url || `/micro-apps/custom/${payload.app.id}`,
+        source: "created"
+      };
+
+      setOwnedApps((current) => mergeOwnedApps(current, [ownedApp]));
+      setPrompt("");
+      setActiveTab("Apps");
+    } catch (error) {
+      setCreateError(error instanceof Error ? error.message : "Could not create the app.");
+    } finally {
+      window.clearInterval(interval);
+      setBuildStep("Finishing");
+      window.setTimeout(() => {
+        setIsCreating(false);
+        setBuildStep("Thinking");
+      }, 350);
     }
-
-    await wait(800);
-    setBuildStep("Finishing");
-    await wait(500);
-
-    const updated = mergeOwnedApps(ownedApps, [ownedApp]);
-    setOwnedApps(updated);
-    writeOwnedApps(userEmail, updated);
-    setPrompt("");
-    setActiveTab("Apps");
-    setIsCreating(false);
   }
 
   function addStoreApp(app: CatalogApp) {
@@ -270,14 +256,13 @@ export default function HomePage() {
       id: app.id,
       name: app.name,
       summary: app.summary,
-      prompt: app.prompt,
       route: app.route,
       source: "store"
     };
 
     const updated = mergeOwnedApps(ownedApps, [ownedApp]);
     setOwnedApps(updated);
-    writeOwnedApps(userEmail, updated);
+    writeStoreApps(userEmail, updated.filter((item) => item.source === "store"));
     setActiveTab("Apps");
   }
 
@@ -285,6 +270,7 @@ export default function HomePage() {
     await supabase.auth.signOut();
     setOwnedApps([]);
     setPrompt("");
+    setCreateError("");
     setActiveTab("Create");
   }
 
@@ -370,9 +356,10 @@ export default function HomePage() {
                       <span className={`loader-fill step-${buildStep.toLowerCase()}`} />
                     </div>
                     <strong>{buildStep}</strong>
-                    <span>Your app will appear in Apps when the build completes.</span>
+                    <span>Your app will appear in Apps when it is ready.</span>
                   </div>
                 ) : null}
+                {createError ? <p className="auth-error">{createError}</p> : null}
               </form>
             </section>
           )}
@@ -386,7 +373,7 @@ export default function HomePage() {
                 placeholder="Search your apps"
               />
 
-              {filteredOwnedApps.length == 0 ? (
+              {filteredOwnedApps.length === 0 ? (
                 <section className="panel empty-panel">
                   <h3>No apps yet</h3>
                   <p>Create one or add one from the store.</p>
@@ -402,15 +389,17 @@ export default function HomePage() {
                       <Link className="primary-button inline" href={app.route}>
                         Open
                       </Link>
-                      <button
-                        className="secondary-button inline"
-                        onClick={() => {
-                          setPrompt(`Update ${app.name}: ${app.prompt}`);
-                          setActiveTab("Create");
-                        }}
-                      >
-                        Edit
-                      </button>
+                      {app.source === "created" ? (
+                        <button
+                          className="secondary-button inline"
+                          onClick={() => {
+                            setPrompt(`Refine ${app.name} so it handles one more workflow cleanly.`);
+                            setActiveTab("Create");
+                          }}
+                        >
+                          Edit
+                        </button>
+                      ) : null}
                     </div>
                   </article>
                 ))
@@ -421,20 +410,16 @@ export default function HomePage() {
           {activeTab === "Guide" && (
             <section className="stack-list">
               <article className="panel guide-panel">
-                <h3>What this app is</h3>
-                <p>Foundry is for small apps with one clear job. Build your own or save one from the store.</p>
+                <h3>What Foundry does</h3>
+                <p>Foundry turns a short prompt into a small app built for one exact job.</p>
               </article>
               <article className="panel guide-panel">
-                <h3>Create</h3>
-                <p>Write one direct prompt. Foundry turns it into a personal app and adds it to your Apps tab.</p>
+                <h3>How to use it</h3>
+                <p>Write the task clearly, create the app, then open it from Apps and use it immediately.</p>
               </article>
               <article className="panel guide-panel">
-                <h3>Apps</h3>
-                <p>Your Apps tab only shows apps you created or added for yourself.</p>
-              </article>
-              <article className="panel guide-panel">
-                <h3>Store</h3>
-                <p>The store holds polished starter apps that you can open or save into your own workspace.</p>
+                <h3>What belongs here</h3>
+                <p>Personal tools, event helpers, trackers, calculators, and focused workflows work best.</p>
               </article>
             </section>
           )}
@@ -512,70 +497,17 @@ export default function HomePage() {
   );
 }
 
-function buildCustomAppSpec(prompt: string): CustomAppSpec {
-  const name = deriveTitle(prompt);
-  const summary = deriveSummary(prompt);
-  const focus = deriveFocus(prompt);
-
-  return {
-    id: crypto.randomUUID(),
-    name,
-    summary,
-    prompt,
-    focus
-  };
+function nextBuildStep(step: BuildStep): BuildStep {
+  if (step === "Thinking") return "Planning";
+  if (step === "Planning") return "Building";
+  if (step === "Building") return "Finishing";
+  return "Building";
 }
 
-function deriveTitle(prompt: string) {
-  const stopWords = new Set([
-    "make",
-    "build",
-    "create",
-    "me",
-    "my",
-    "i",
-    "want",
-    "need",
-    "to",
-    "into",
-    "for",
-    "with",
-    "a",
-    "an",
-    "the",
-    "app"
-  ]);
-
-  const tokens = prompt
-    .replace(/[^a-zA-Z0-9 ]/g, " ")
-    .split(/\s+/)
-    .filter(Boolean)
-    .filter((token) => !stopWords.has(token.toLowerCase()))
-    .slice(0, 3)
-    .map((token) => token[0].toUpperCase() + token.slice(1).toLowerCase());
-
-  return tokens.join(" ") || "New App";
-}
-
-function deriveSummary(prompt: string) {
-  const cleaned = prompt.trim().replace(/\s+/g, " ");
-  if (cleaned.length <= 88) return cleaned;
-  return `${cleaned.slice(0, 85).trim()}...`;
-}
-
-function deriveFocus(prompt: string) {
-  const parts = prompt
-    .split(/,| and | with /i)
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .slice(0, 4);
-
-  return parts.length > 0 ? parts : ["One clear workflow", "Simple input", "A result screen"];
-}
-
-function readOwnedApps(email: string): OwnedApp[] {
+function readStoreApps(email: string): OwnedApp[] {
   if (typeof window === "undefined") return [];
-  const raw = window.localStorage.getItem(`foundry.owned.${email}`);
+
+  const raw = window.localStorage.getItem(`foundry.store.${email}`);
   if (!raw) return [];
 
   try {
@@ -585,9 +517,9 @@ function readOwnedApps(email: string): OwnedApp[] {
   }
 }
 
-function writeOwnedApps(email: string, apps: OwnedApp[]) {
+function writeStoreApps(email: string, apps: OwnedApp[]) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(`foundry.owned.${email}`, JSON.stringify(apps));
+  window.localStorage.setItem(`foundry.store.${email}`, JSON.stringify(apps));
 }
 
 function mergeOwnedApps(base: OwnedApp[], incoming: OwnedApp[]) {
@@ -596,17 +528,4 @@ function mergeOwnedApps(base: OwnedApp[], incoming: OwnedApp[]) {
     map.set(app.id, app);
   });
   return [...map.values()];
-}
-
-function storeCustomSpec(spec: CustomAppSpec) {
-  if (typeof window === "undefined") return;
-
-  const raw = window.localStorage.getItem("foundry.customApps");
-  const current = raw ? ((JSON.parse(raw) as CustomAppSpec[]) ?? []) : [];
-  const next = [spec, ...current.filter((item) => item.id !== spec.id)];
-  window.localStorage.setItem("foundry.customApps", JSON.stringify(next));
-}
-
-function wait(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
