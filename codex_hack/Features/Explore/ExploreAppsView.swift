@@ -3,18 +3,19 @@ import SwiftUI
 struct ExploreAppsView: View {
     @EnvironmentObject private var appModel: AppModel
     @State private var selectedCategory: AppCategory?
+    @State private var searchText = ""
 
     var body: some View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 18) {
-                    GlassCard {
-                        SectionTitle(
-                            eyebrow: "Public Store",
-                            title: "A store for useful, legible apps",
-                            subtitle: "Public apps are small, clear, and easy to remix into a private or team copy."
+                VStack(spacing: 14) {
+                    TextField("Search", text: $searchText)
+                        .padding(14)
+                        .background(AppTheme.card, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .stroke(AppTheme.line, lineWidth: 1)
                         )
-                    }
 
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
@@ -25,7 +26,7 @@ struct ExploreAppsView: View {
                             }
                             .buttonStyle(.plain)
 
-                            ForEach(AppCategory.allCases) { category in
+                            ForEach(AppCategory.allCases.filter { $0 != .dashboard }) { category in
                                 Button {
                                     selectedCategory = category
                                 } label: {
@@ -39,33 +40,31 @@ struct ExploreAppsView: View {
                     ForEach(filteredApps, id: \.id) { app in
                         GlassCard {
                             VStack(alignment: .leading, spacing: 12) {
-                                HStack(alignment: .top) {
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        Text(app.name)
-                                            .font(.headline)
-                                            .foregroundStyle(AppTheme.ink)
-                                        Text(app.tagline)
-                                            .font(.subheadline)
-                                            .foregroundStyle(AppTheme.slate)
-                                        HStack(spacing: 8) {
-                                            TagChip(title: app.category.rawValue)
-                                            TagChip(title: "\(app.metrics.favorites) saves")
-                                        }
+                                Text(app.name)
+                                    .font(.system(.headline, design: .rounded, weight: .semibold))
+                                    .foregroundStyle(AppTheme.ink)
+
+                                Text(app.summary)
+                                    .font(.system(.subheadline, design: .rounded))
+                                    .foregroundStyle(AppTheme.slate)
+                                    .lineLimit(2)
+
+                                HStack(spacing: 8) {
+                                    TagChip(title: app.category.rawValue)
+                                    TagChip(title: "\(app.metrics.favorites) saves")
+                                }
+
+                                HStack(spacing: 10) {
+                                    Button("Open") {
+                                        appModel.selectedApp = app
                                     }
-                                    Spacer()
+                                    .buttonStyle(CTAButtonStyle())
+
                                     Button("Remix") {
                                         appModel.requestPublicRemix(from: app)
                                     }
                                     .buttonStyle(CTAButtonStyle(prominent: false))
-                                    .frame(width: 104)
                                 }
-
-                                Text(app.summary)
-                                    .font(.subheadline)
-                                    .foregroundStyle(AppTheme.slate)
-                                Text(app.storeNote)
-                                    .font(.footnote)
-                                    .foregroundStyle(AppTheme.slate)
                             }
                         }
                     }
@@ -78,10 +77,12 @@ struct ExploreAppsView: View {
     }
 
     private var filteredApps: [MicroApp] {
-        if let selectedCategory {
-            return appModel.publicApps.filter { $0.category == selectedCategory }
+        appModel.publicApps.filter { app in
+            let categoryMatch = selectedCategory == nil || app.category == selectedCategory
+            let searchMatch = searchText.isEmpty
+                || app.name.localizedCaseInsensitiveContains(searchText)
+                || app.summary.localizedCaseInsensitiveContains(searchText)
+            return categoryMatch && searchMatch
         }
-
-        return appModel.publicApps
     }
 }

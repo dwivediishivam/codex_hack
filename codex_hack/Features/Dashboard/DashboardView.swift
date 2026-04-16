@@ -2,188 +2,110 @@ import SwiftUI
 
 struct DashboardView: View {
     @EnvironmentObject private var appModel: AppModel
+    @State private var selectedFilter: AppVisibility?
 
     var body: some View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 18) {
+                VStack(spacing: 14) {
                     header
-                    buildQueue
-                    storePreview
-                    workspacePreview
-                }
-                .padding(20)
-            }
-            .background(ShellBackground())
-            .navigationTitle("Home")
-        }
-    }
+                    filters
 
-    private var header: some View {
-        GlassCard {
-            VStack(alignment: .leading, spacing: 16) {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(alignment: .center, spacing: 14) {
-                        Image("BrandMark")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 46, height: 46)
-                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Good evening, \(appModel.session.profile.name)")
-                                .font(.system(.largeTitle, design: .serif, weight: .semibold))
-                                .foregroundStyle(AppTheme.ink)
-                            Text("Keep private builds, public launches, and workspace tools in one calm place.")
-                                .font(.subheadline)
-                                .foregroundStyle(AppTheme.slate)
-                        }
-                    }
-                }
+                    ForEach(filteredApps, id: \.id) { app in
+                        GlassCard {
+                            VStack(alignment: .leading, spacing: 12) {
+                                HStack(alignment: .top) {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(app.name)
+                                            .font(.system(.headline, design: .rounded, weight: .semibold))
+                                            .foregroundStyle(AppTheme.ink)
+                                        Text(app.summary)
+                                            .font(.system(.subheadline, design: .rounded))
+                                            .foregroundStyle(AppTheme.slate)
+                                            .lineLimit(2)
+                                    }
 
-                HStack(spacing: 10) {
-                    MetricPill(label: "Ready", value: "\(appModel.readyApps.count)")
-                    MetricPill(label: "Building", value: "\(appModel.buildingApps.count)")
-                    MetricPill(label: "Store", value: "\(appModel.publicApps.count)")
-                }
+                                    Spacer()
 
-                if let syncError = appModel.syncError {
-                    Text(syncError)
-                        .font(.footnote)
-                        .foregroundStyle(AppTheme.warning)
-                }
-            }
-        }
-    }
+                                    TagChip(title: app.status.badgeText, isSelected: app.status == .ready)
+                                }
 
-    private var buildQueue: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionTitle(
-                eyebrow: "Recent",
-                title: "Apps in motion",
-                subtitle: "The four starter apps show the three release modes clearly: private, public, and team."
-            )
-
-            ForEach(appModel.recentApps, id: \.id) { app in
-                Button {
-                    appModel.selectedApp = app
-                } label: {
-                    GlassCard {
-                        HStack(alignment: .top) {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text(app.name)
-                                    .font(.headline)
-                                    .foregroundStyle(AppTheme.ink)
-                                Text(app.tagline)
-                                    .font(.subheadline)
-                                    .foregroundStyle(AppTheme.slate)
-                                    .multilineTextAlignment(.leading)
                                 HStack(spacing: 8) {
                                     TagChip(title: app.visibility.rawValue)
                                     TagChip(title: app.category.rawValue)
                                 }
-                            }
-                            Spacer()
-                            MetricPill(label: "Status", value: app.status.badgeText)
-                        }
 
-                        AppProgressBar(value: app.completion)
-                        HStack {
-                            Text(app.storeNote)
-                                .font(.caption)
-                                .foregroundStyle(AppTheme.slate)
-                            Spacer()
-                            Text("\(Int(app.completion * 100))%")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(AppTheme.ink)
-                        }
-                    }
-                }
-                .buttonStyle(.plain)
-            }
-        }
-    }
-
-    private var storePreview: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionTitle(
-                eyebrow: "Store",
-                title: "Public apps with a clear reason to exist",
-                subtitle: "The store is curated. Public apps need a crisp use case, quick payoff, and a clean remix path."
-            )
-
-            ForEach(appModel.storeHighlights.prefix(2), id: \.id) { app in
-                GlassCard {
-                    HStack(alignment: .top, spacing: 12) {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(app.name)
-                                .font(.headline)
-                                .foregroundStyle(AppTheme.ink)
-                            Text(app.summary)
-                                .font(.subheadline)
-                                .foregroundStyle(AppTheme.slate)
-                                .multilineTextAlignment(.leading)
-                        }
-                        Spacer()
-                        VStack(alignment: .trailing, spacing: 6) {
-                            Text("\(app.metrics.favorites)")
-                                .font(.system(.title3, design: .serif, weight: .semibold))
-                                .foregroundStyle(AppTheme.ink)
-                            Text("saves")
-                                .font(.caption)
-                                .foregroundStyle(AppTheme.slate)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private var workspacePreview: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionTitle(
-                eyebrow: "Teams",
-                title: "Workspace apps stay governed",
-                subtitle: "Organization apps keep shared ownership, version notes, and a single live URL."
-            )
-
-            ForEach(appModel.organizations) { organization in
-                GlassCard {
-                    VStack(alignment: .leading, spacing: 10) {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(organization.name)
-                                    .font(.headline)
-                                    .foregroundStyle(AppTheme.ink)
-                                Text(organization.domain)
-                                    .font(.subheadline)
-                                    .foregroundStyle(AppTheme.slate)
-                            }
-                            Spacer()
-                            MetricPill(label: "Seats", value: "\(organization.seatCount)")
-                        }
-
-                        ForEach(organization.apps, id: \.id) { app in
-                            Button {
-                                appModel.selectedApp = app
-                            } label: {
-                                HStack {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(app.name)
-                                            .font(.subheadline.weight(.semibold))
-                                            .foregroundStyle(AppTheme.ink)
-                                        Text(app.tagline)
-                                            .font(.caption)
-                                            .foregroundStyle(AppTheme.slate)
+                                HStack(spacing: 10) {
+                                    Button("Open") {
+                                        appModel.selectedApp = app
                                     }
-                                    Spacer()
-                                    TagChip(title: app.status.badgeText, isSelected: true)
+                                    .buttonStyle(CTAButtonStyle())
+
+                                    Button("Edit") {
+                                        appModel.createPrompt = "Update \(app.name): "
+                                        appModel.selectedTab = .create
+                                    }
+                                    .buttonStyle(CTAButtonStyle(prominent: false))
                                 }
                             }
-                            .buttonStyle(.plain)
                         }
                     }
                 }
+                .padding(20)
+            }
+            .background(ShellBackground())
+            .navigationTitle("Apps")
+        }
+    }
+
+    private var header: some View {
+        HStack(spacing: 12) {
+            Image("BrandMark")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 34, height: 34)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+            Spacer()
+
+            if let syncError = appModel.syncError {
+                Text(syncError)
+                    .font(.system(.caption, design: .rounded))
+                    .foregroundStyle(AppTheme.warning)
+                    .lineLimit(1)
+            } else {
+                MetricPill(label: "Apps", value: "\(appModel.recentApps.count)")
             }
         }
+    }
+
+    private var filters: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                Button {
+                    selectedFilter = nil
+                } label: {
+                    TagChip(title: "All", isSelected: selectedFilter == nil)
+                }
+                .buttonStyle(.plain)
+
+                ForEach(AppVisibility.allCases) { visibility in
+                    Button {
+                        selectedFilter = visibility
+                    } label: {
+                        TagChip(title: visibility.rawValue, isSelected: selectedFilter == visibility)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    private var filteredApps: [MicroApp] {
+        guard let selectedFilter else {
+            return appModel.recentApps
+        }
+
+        return appModel.recentApps.filter { $0.visibility == selectedFilter }
     }
 }

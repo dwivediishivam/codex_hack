@@ -11,7 +11,7 @@ interface LocalStoreState {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const storePath = join(__dirname, "../../data/store.json");
-const publicDeploymentUrl = "https://codex-hack-web.vercel.app";
+const publicDeploymentUrl = "https://pocket-founder.vercel.app";
 let cache: LocalStoreState | null = null;
 
 export async function listLocalApps(ownerId?: string) {
@@ -51,7 +51,7 @@ export async function createLocalApp(input: {
     category: input.category,
     generation_mode: input.generationMode,
     status: input.visibility === "public" ? "reviewing" : "building",
-    deployment_url: publicDeploymentUrl,
+    deployment_url: deploymentURLForName(input.name),
     created_at: now,
     updated_at: now
   };
@@ -123,7 +123,7 @@ function buildSeedState(): LocalStoreState {
       category: "finance",
       generation_mode: "instant",
       status: "ready",
-      deployment_url: publicDeploymentUrl,
+      deployment_url: `${publicDeploymentUrl}/micro-apps/spend-hours`,
       created_at: new Date(now - 86_400_000).toISOString(),
       updated_at: new Date(now - 4_200_000).toISOString()
     },
@@ -137,7 +137,7 @@ function buildSeedState(): LocalStoreState {
       category: "event",
       generation_mode: "instant",
       status: "ready",
-      deployment_url: publicDeploymentUrl,
+      deployment_url: `${publicDeploymentUrl}/micro-apps/guest-desk`,
       created_at: new Date(now - 72_000_000).toISOString(),
       updated_at: new Date(now - 12_800_000).toISOString()
     },
@@ -151,7 +151,7 @@ function buildSeedState(): LocalStoreState {
       category: "operations",
       generation_mode: "instant",
       status: "reviewing",
-      deployment_url: publicDeploymentUrl,
+      deployment_url: `${publicDeploymentUrl}/micro-apps/renewal-radar`,
       created_at: new Date(now - 64_000_000).toISOString(),
       updated_at: new Date(now - 6_200_000).toISOString()
     },
@@ -165,9 +165,23 @@ function buildSeedState(): LocalStoreState {
       category: "planner",
       generation_mode: "instant",
       status: "building",
-      deployment_url: publicDeploymentUrl,
+      deployment_url: `${publicDeploymentUrl}/micro-apps/brief-deck`,
       created_at: new Date(now - 32_000_000).toISOString(),
       updated_at: new Date(now - 3_400_000).toISOString()
+    },
+    {
+      id: randomUUID(),
+      owner_id: "foundry-demo",
+      name: "Polaroid Print",
+      summary: "Take or upload a photo, wrap it in instant-film layouts, and prepare A4 or A3 print sheets with clear size specs.",
+      visibility: "public",
+      audience: "consumer",
+      category: "custom",
+      generation_mode: "instant",
+      status: "ready",
+      deployment_url: `${publicDeploymentUrl}/micro-apps/polaroid-print`,
+      created_at: new Date(now - 28_000_000).toISOString(),
+      updated_at: new Date(now - 2_100_000).toISOString()
     }
   ];
 
@@ -189,4 +203,13 @@ function buildSeedState(): LocalStoreState {
 
 function sortByUpdated(items: MicroAppRecord[]) {
   return [...items].sort((left, right) => right.updated_at.localeCompare(left.updated_at));
+}
+
+function deploymentURLForName(name: string) {
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+
+  return slug ? `${publicDeploymentUrl}/micro-apps/${slug}` : publicDeploymentUrl;
 }

@@ -3,7 +3,7 @@ import Foundation
 enum StudioBrand {
     static let name = "Foundry"
     static let tag = "Micro apps, made to fit."
-    static let summary = "Create private tools, public utilities, and workspace apps from a single prompt."
+    static let summary = "Build small apps."
 }
 
 struct UserSession {
@@ -150,6 +150,10 @@ struct GenerationPromptPackage {
 }
 
 extension MicroApp {
+    private static func hostedAppURL(_ slug: String) -> URL? {
+        URL(string: "https://pocket-founder.vercel.app/micro-apps/\(slug)")
+    }
+
     static let spendHours = MicroApp(
         id: UUID(),
         name: "Spend Hours",
@@ -162,7 +166,7 @@ extension MicroApp {
         audience: .consumers,
         status: .ready,
         completion: 1,
-        deploymentURL: URL(string: "https://codex-hack-web.vercel.app"),
+        deploymentURL: hostedAppURL("spend-hours"),
         lastEdited: .now.addingTimeInterval(-4200),
         metrics: .init(runs: 942, favorites: 312, forks: 74),
         updates: [
@@ -182,7 +186,7 @@ extension MicroApp {
         audience: .operations,
         status: .ready,
         completion: 1,
-        deploymentURL: URL(string: "https://codex-hack-web.vercel.app"),
+        deploymentURL: hostedAppURL("guest-desk"),
         lastEdited: .now.addingTimeInterval(-12800),
         metrics: .init(runs: 508, favorites: 196, forks: 43),
         updates: [
@@ -202,7 +206,7 @@ extension MicroApp {
         audience: .team,
         status: .reviewing,
         completion: 0.84,
-        deploymentURL: URL(string: "https://codex-hack-web.vercel.app"),
+        deploymentURL: hostedAppURL("renewal-radar"),
         lastEdited: .now.addingTimeInterval(-6200),
         metrics: .init(runs: 68, favorites: 21, forks: 6),
         updates: [
@@ -222,7 +226,7 @@ extension MicroApp {
         audience: .personal,
         status: .building,
         completion: 0.41,
-        deploymentURL: URL(string: "https://codex-hack-web.vercel.app"),
+        deploymentURL: hostedAppURL("brief-deck"),
         lastEdited: .now.addingTimeInterval(-3400),
         metrics: .init(runs: 14, favorites: 4, forks: 1),
         updates: [
@@ -230,11 +234,32 @@ extension MicroApp {
         ]
     )
 
+    static let polaroidPrint = MicroApp(
+        id: UUID(),
+        name: "Polaroid Print",
+        tagline: "Shoot once. Export clean polaroids.",
+        summary: "Take or upload a photo, wrap it in instant-film layouts, and prepare A4 or A3 print sheets with clear size specs.",
+        storeNote: "A strong public utility for creators, events, and quick on-site prints.",
+        samplePrompt: "Make an app that takes pictures and outputs polaroids in different sizes with A4 and A3 print sheets.",
+        category: .custom,
+        visibility: .publicApp,
+        audience: .consumers,
+        status: .ready,
+        completion: 1,
+        deploymentURL: hostedAppURL("polaroid-print"),
+        lastEdited: .now.addingTimeInterval(-5100),
+        metrics: .init(runs: 287, favorites: 119, forks: 32),
+        updates: [
+            AppUpdate(title: "Sheet layouts added", message: "A4 and A3 layouts now show print counts before export.", timestamp: .now.addingTimeInterval(-2600))
+        ]
+    )
+
     static let sampleData: [MicroApp] = [
         spendHours,
         guestDesk,
         renewalRadar,
-        briefDeck
+        briefDeck,
+        polaroidPrint
     ]
 
     static let publicShowcase: [MicroApp] = sampleData.filter { $0.visibility == .publicApp }

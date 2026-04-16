@@ -12,7 +12,7 @@ final class AppModel: ObservableObject {
     @Published var isAuthenticating = false
     @Published var isSyncing = false
     @Published var syncError: String?
-    @Published var selectedTab: MainTab = .dashboard
+    @Published var selectedTab: MainTab = .apps
     @Published var selectedApp: MicroApp?
     @Published var createPrompt = ""
     @Published var draftVisibility: AppVisibility = .privateApp
@@ -56,7 +56,8 @@ final class AppModel: ObservableObject {
             MicroApp.spendHours.samplePrompt,
             MicroApp.guestDesk.samplePrompt,
             MicroApp.renewalRadar.samplePrompt,
-            MicroApp.briefDeck.samplePrompt
+            MicroApp.briefDeck.samplePrompt,
+            MicroApp.polaroidPrint.samplePrompt
         ]
     }
 
@@ -108,7 +109,7 @@ final class AppModel: ObservableObject {
         session.isAuthenticated = false
         session.accessToken = nil
         authPassword = ""
-        selectedTab = .dashboard
+        selectedTab = .apps
         syncError = nil
         hasLoadedRemoteState = false
         recentApps = MicroApp.sampleData
@@ -156,7 +157,7 @@ final class AppModel: ObservableObject {
 
         draftAudience = audience
         createPrompt = ""
-        selectedTab = .dashboard
+        selectedTab = .apps
         syncError = nil
 
         guard session.isAuthenticated else {
@@ -281,41 +282,41 @@ enum AuthMode: String, CaseIterable, Identifiable {
 }
 
 enum MainTab: String, CaseIterable, Identifiable {
-    case dashboard
+    case apps
     case create
-    case explore
-    case organizations
+    case instructions
+    case store
     case profile
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
-        case .dashboard:
-            return "Home"
+        case .apps:
+            return "Apps"
         case .create:
-            return "Build"
-        case .explore:
+            return "Create"
+        case .instructions:
+            return "Guide"
+        case .store:
             return "Store"
-        case .organizations:
-            return "Teams"
         case .profile:
-            return "Account"
+            return "Profile"
         }
     }
 
     var symbol: String {
         switch self {
-        case .dashboard:
-            return "house.fill"
+        case .apps:
+            return "square.stack.3d.up.fill"
         case .create:
             return "plus.app.fill"
-        case .explore:
-            return "square.grid.2x2"
-        case .organizations:
-            return "person.2.fill"
+        case .instructions:
+            return "text.book.closed.fill"
+        case .store:
+            return "magnifyingglass"
         case .profile:
-            return "circle.grid.2x1.fill"
+            return "person.crop.circle.fill"
         }
     }
 }

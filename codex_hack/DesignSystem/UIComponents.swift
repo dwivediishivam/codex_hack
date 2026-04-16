@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct GlassCard<Content: View>: View {
-    var padding: CGFloat = 18
+    var padding: CGFloat = 16
     @ViewBuilder var content: Content
 
     var body: some View {
@@ -9,12 +9,12 @@ struct GlassCard<Content: View>: View {
             content
         }
         .padding(padding)
-        .background(AppTheme.card, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+        .background(AppTheme.card, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
                 .stroke(AppTheme.line, lineWidth: 1)
         )
-        .shadow(color: Color.black.opacity(0.03), radius: 16, x: 0, y: 8)
+        .shadow(color: Color.black.opacity(0.025), radius: 12, x: 0, y: 6)
     }
 }
 
@@ -26,14 +26,14 @@ struct SectionTitle: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(eyebrow.uppercased())
-                .font(.caption.weight(.semibold))
+                .font(.system(.caption, design: .rounded, weight: .semibold))
                 .tracking(1.8)
                 .foregroundStyle(AppTheme.slate)
             Text(title)
-                .font(.system(.title2, design: .serif, weight: .semibold))
+                .font(.system(.title3, design: .rounded, weight: .semibold))
                 .foregroundStyle(AppTheme.ink)
             Text(subtitle)
-                .font(.subheadline)
+                .font(.system(.subheadline, design: .rounded))
                 .foregroundStyle(AppTheme.slate)
         }
     }
@@ -46,10 +46,10 @@ struct MetricPill: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(value)
-                .font(.system(.headline, design: .serif, weight: .semibold))
+                .font(.system(.headline, design: .rounded, weight: .semibold))
                 .foregroundStyle(AppTheme.ink)
             Text(label)
-                .font(.caption)
+                .font(.system(.caption, design: .rounded))
                 .foregroundStyle(AppTheme.slate)
         }
         .padding(.horizontal, 14)
@@ -65,10 +65,10 @@ struct TagChip: View {
 
     var body: some View {
         Text(title)
-            .font(.subheadline.weight(.semibold))
+            .font(.system(.subheadline, design: .rounded, weight: .semibold))
             .foregroundStyle(isSelected ? AppTheme.card : AppTheme.ink)
             .padding(.horizontal, 14)
-            .padding(.vertical, 9)
+            .padding(.vertical, 8)
             .background(isSelected ? AppTheme.accent : AppTheme.cardMuted, in: Capsule())
             .overlay(Capsule().stroke(isSelected ? AppTheme.accent : AppTheme.line, lineWidth: 1))
     }
@@ -96,10 +96,10 @@ struct CTAButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.headline.weight(.semibold))
+            .font(.system(.headline, design: .rounded, weight: .semibold))
             .foregroundStyle(prominent ? AppTheme.card : AppTheme.ink)
             .padding(.horizontal, 18)
-            .padding(.vertical, 14)
+            .padding(.vertical, 13)
             .frame(maxWidth: .infinity)
             .background(prominent ? AppTheme.accent : AppTheme.cardMuted, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             .overlay(

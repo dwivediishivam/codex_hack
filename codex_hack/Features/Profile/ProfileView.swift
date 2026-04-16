@@ -6,32 +6,25 @@ struct ProfileView: View {
     var body: some View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 18) {
+                VStack(spacing: 14) {
                     GlassCard {
-                        VStack(alignment: .leading, spacing: 10) {
+                        VStack(alignment: .leading, spacing: 8) {
                             Text(appModel.session.profile.name)
-                                .font(.system(.title2, design: .serif, weight: .semibold))
+                                .font(.system(.title3, design: .rounded, weight: .semibold))
                                 .foregroundStyle(AppTheme.ink)
                             Text(appModel.session.profile.email)
-                                .font(.subheadline)
+                                .font(.system(.subheadline, design: .rounded))
                                 .foregroundStyle(AppTheme.slate)
-                            HStack(spacing: 10) {
-                                MetricPill(label: "Role", value: appModel.session.profile.role)
-                                MetricPill(label: "Teams", value: "\(appModel.session.profile.organizationCount)")
-                            }
                         }
                     }
 
                     GlassCard {
-                        SectionTitle(
-                            eyebrow: "Platform",
-                            title: "Connection status",
-                            subtitle: "The shell uses Supabase for auth and points at a separate backend for build and deployment jobs."
-                        )
-
-                        configRow("Supabase", isConfigured: AppConfig.hasAuthConfiguration)
-                        configRow("Backend API", isConfigured: !AppConfig.backendBaseURL.isEmpty)
-                        configRow("Email login", isConfigured: AuthService.shared.isConfigured)
+                        VStack(spacing: 12) {
+                            settingRow("Role", value: appModel.session.profile.role)
+                            settingRow("Teams", value: "\(appModel.session.profile.organizationCount)")
+                            settingRow("Auth", value: AppConfig.hasAuthConfiguration ? "On" : "Off")
+                            settingRow("API", value: AppConfig.hasBackendConfiguration ? "On" : "Off")
+                        }
                     }
 
                     Button("Sign Out") {
@@ -42,19 +35,19 @@ struct ProfileView: View {
                 .padding(20)
             }
             .background(ShellBackground())
-            .navigationTitle("Account")
+            .navigationTitle("Profile")
         }
     }
 
-    private func configRow(_ title: String, isConfigured: Bool) -> some View {
+    private func settingRow(_ title: String, value: String) -> some View {
         HStack {
             Text(title)
+                .font(.system(.body, design: .rounded))
                 .foregroundStyle(AppTheme.ink)
             Spacer()
-            Text(isConfigured ? "Ready" : "Needs setup")
-                .font(.caption.weight(.bold))
-                .foregroundStyle(isConfigured ? AppTheme.success : AppTheme.rose)
+            Text(value)
+                .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                .foregroundStyle(AppTheme.slate)
         }
-        .padding(.vertical, 4)
     }
 }

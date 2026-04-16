@@ -7,9 +7,9 @@ struct MainShellView: View {
         TabView(selection: $appModel.selectedTab) {
             DashboardView()
                 .tabItem {
-                    Label(MainTab.dashboard.title, systemImage: MainTab.dashboard.symbol)
+                    Label(MainTab.apps.title, systemImage: MainTab.apps.symbol)
                 }
-                .tag(MainTab.dashboard)
+                .tag(MainTab.apps)
 
             CreateAppView()
                 .tabItem {
@@ -17,17 +17,17 @@ struct MainShellView: View {
                 }
                 .tag(MainTab.create)
 
-            ExploreAppsView()
-                .tabItem {
-                    Label(MainTab.explore.title, systemImage: MainTab.explore.symbol)
-                }
-                .tag(MainTab.explore)
-
             OrganizationsView()
                 .tabItem {
-                    Label(MainTab.organizations.title, systemImage: MainTab.organizations.symbol)
+                    Label(MainTab.instructions.title, systemImage: MainTab.instructions.symbol)
                 }
-                .tag(MainTab.organizations)
+                .tag(MainTab.instructions)
+
+            ExploreAppsView()
+                .tabItem {
+                    Label(MainTab.store.title, systemImage: MainTab.store.symbol)
+                }
+                .tag(MainTab.store)
 
             ProfileView()
                 .tabItem {

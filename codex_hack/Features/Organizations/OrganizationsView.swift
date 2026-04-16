@@ -1,63 +1,36 @@
 import SwiftUI
 
 struct OrganizationsView: View {
-    @EnvironmentObject private var appModel: AppModel
-
     var body: some View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 18) {
-                    GlassCard {
-                        SectionTitle(
-                            eyebrow: "Workspaces",
-                            title: "Shared tools with a single owner trail",
-                            subtitle: "Team apps keep one live URL, shared access, and prompt-based version notes."
-                        )
-                    }
-
-                    ForEach(appModel.organizations) { organization in
-                        GlassCard {
-                            VStack(alignment: .leading, spacing: 12) {
-                                HStack {
-                                    VStack(alignment: .leading, spacing: 6) {
-                                        Text(organization.name)
-                                            .font(.headline)
-                                            .foregroundStyle(AppTheme.ink)
-                                        Text(organization.domain)
-                                            .font(.subheadline)
-                                            .foregroundStyle(AppTheme.slate)
-                                    }
-                                    Spacer()
-                                    MetricPill(label: "Seats", value: "\(organization.seatCount)")
-                                }
-
-                                ForEach(organization.apps, id: \.id) { app in
-                                    Button {
-                                        appModel.selectedApp = app
-                                    } label: {
-                                        HStack(alignment: .top) {
-                                            VStack(alignment: .leading, spacing: 4) {
-                                                Text(app.name)
-                                                    .font(.subheadline.weight(.semibold))
-                                                    .foregroundStyle(AppTheme.ink)
-                                                Text(app.tagline)
-                                                    .font(.caption)
-                                                    .foregroundStyle(AppTheme.slate)
-                                            }
-                                            Spacer()
-                                            TagChip(title: app.status.badgeText, isSelected: true)
-                                        }
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                            }
-                        }
-                    }
+                VStack(spacing: 12) {
+                    instructionRow(number: "1", text: "Write one clear prompt.")
+                    instructionRow(number: "2", text: "Choose Private, Public, or Org.")
+                    instructionRow(number: "3", text: "Create the app.")
+                    instructionRow(number: "4", text: "Open it. Edit it. Publish it.")
                 }
                 .padding(20)
             }
             .background(ShellBackground())
-            .navigationTitle("Teams")
+            .navigationTitle("Guide")
+        }
+    }
+
+    private func instructionRow(number: String, text: String) -> some View {
+        GlassCard {
+            HStack(spacing: 14) {
+                Text(number)
+                    .font(.system(.headline, design: .rounded, weight: .semibold))
+                    .foregroundStyle(AppTheme.ink)
+                    .frame(width: 24)
+
+                Text(text)
+                    .font(.system(.body, design: .rounded))
+                    .foregroundStyle(AppTheme.ink)
+
+                Spacer()
+            }
         }
     }
 }
