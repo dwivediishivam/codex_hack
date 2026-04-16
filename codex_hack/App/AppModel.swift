@@ -23,6 +23,32 @@ final class AppModel: ObservableObject {
     @Published var publicApps = MicroApp.publicShowcase
     @Published var organizations = WorkspaceOrganization.sampleData
     private var hasLoadedRemoteState = false
+    private var authObserverTask: Task<Void, Never>?
+
+    init() {
+        authObserverTask = Task { [weak self] in
+            guard let self else { return }
+
+            if let restored = await AuthService.shared.restoreSession() {
+                self.session = restored
+                await self.loadRemoteState(force: true)
+            } else {
+                self.session = .preview
+                self.session.isAuthenticated = false
+            }
+
+            for await authState in AuthService.shared.authStateChanges() {
+                guard !Task.isCancelled else { break }
+
+                if let authState {
+                    self.session = authState
+                    await self.loadRemoteState(force: true)
+                } else if self.session.isAuthenticated {
+                    self.applySignedOutState()
+                }
+            }
+        }
+    }
 
     var featuredApps: [MicroApp] {
         recentApps
@@ -94,6 +120,12 @@ final class AppModel: ObservableObject {
             case .signUp:
                 try await AuthService.shared.signUp(payload: payload)
             }
+
+            if !session.isAuthenticated, authMode == .signUp {
+                authError = AuthServiceError.confirmationRequired.localizedDescription
+                return
+            }
+
             await loadRemoteState(force: true)
         } catch {
             authError = error.localizedDescription
@@ -105,16 +137,16 @@ final class AppModel: ObservableObject {
             await AuthService.shared.signOut()
         }
 
-        session = .preview
-        session.isAuthenticated = false
-        session.accessToken = nil
-        authPassword = ""
-        selectedTab = .apps
-        syncError = nil
-        hasLoadedRemoteState = false
-        recentApps = MicroApp.sampleData
-        publicApps = MicroApp.publicShowcase
-        organizations = WorkspaceOrganization.sampleData
+        applySignedOutState()
+    }
+
+    func handleIncomingURL(_ url: URL) async {
+        do {
+            session = try await AuthService.shared.handleIncomingURL(url)
+            await loadRemoteState(force: true)
+        } catch {
+            authError = error.localizedDescription
+        }
     }
 
     func loadRemoteStateIfNeeded() async {
@@ -238,6 +270,19 @@ final class AppModel: ObservableObject {
         }
 
         organizations = WorkspaceOrganization.using(recentApps)
+    }
+
+    private func applySignedOutState() {
+        session = .preview
+        session.isAuthenticated = false
+        session.accessToken = nil
+        authPassword = ""
+        selectedTab = .apps
+        syncError = nil
+        hasLoadedRemoteState = false
+        recentApps = MicroApp.sampleData
+        publicApps = MicroApp.publicShowcase
+        organizations = WorkspaceOrganization.sampleData
     }
 
     private func inferredAudience(for visibility: AppVisibility) -> BuildAudience {

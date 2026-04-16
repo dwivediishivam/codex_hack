@@ -99,6 +99,33 @@ export default function HomePage() {
   const [storeFilter, setStoreFilter] = useState<Category | "All">("All");
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const savedSignedIn = window.localStorage.getItem("foundry.signedIn");
+    const savedEmail = window.localStorage.getItem("foundry.email");
+    const savedTab = window.localStorage.getItem("foundry.tab") as Tab | null;
+
+    if (savedSignedIn == "true") {
+      setSignedIn(true);
+    }
+
+    if (savedEmail) {
+      setEmail(savedEmail);
+    }
+
+    if (savedTab && tabs.includes(savedTab)) {
+      setActiveTab(savedTab);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("foundry.signedIn", String(signedIn));
+    window.localStorage.setItem("foundry.email", email);
+    window.localStorage.setItem("foundry.tab", activeTab);
+  }, [signedIn, email, activeTab]);
+
+  useEffect(() => {
     let cancelled = false;
 
     async function load() {
@@ -419,7 +446,16 @@ export default function HomePage() {
                 <span>Public</span>
                 <strong>{storeApps.length}</strong>
               </article>
-              <button className="secondary-button" onClick={() => setSignedIn(false)}>
+              <button
+                className="secondary-button"
+                onClick={() => {
+                  setSignedIn(false);
+                  if (typeof window !== "undefined") {
+                    window.localStorage.removeItem("foundry.signedIn");
+                    window.localStorage.removeItem("foundry.tab");
+                  }
+                }}
+              >
                 Sign Out
               </button>
             </section>

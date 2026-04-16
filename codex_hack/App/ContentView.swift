@@ -12,6 +12,11 @@ struct ContentView: View {
             }
         }
         .background(ShellBackground())
+        .onOpenURL { url in
+            Task {
+                await appModel.handleIncomingURL(url)
+            }
+        }
         .sheet(item: $appModel.selectedApp) { app in
             AppDetailView(app: app)
                 .environmentObject(appModel)

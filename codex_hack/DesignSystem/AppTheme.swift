@@ -1,24 +1,24 @@
 import SwiftUI
 
 enum AppTheme {
-    static let background = Color(red: 0.95, green: 0.94, blue: 0.91)
-    static let backgroundAccent = Color(red: 0.90, green: 0.88, blue: 0.84)
-    static let card = Color(red: 0.985, green: 0.982, blue: 0.974)
-    static let cardMuted = Color(red: 0.962, green: 0.952, blue: 0.936)
-    static let ink = Color(red: 0.10, green: 0.10, blue: 0.09)
-    static let slate = Color(red: 0.41, green: 0.39, blue: 0.35)
-    static let line = Color(red: 0.85, green: 0.82, blue: 0.77)
-    static let accent = Color(red: 0.18, green: 0.21, blue: 0.18)
-    static let accentSoft = Color(red: 0.87, green: 0.84, blue: 0.78)
-    static let success = Color(red: 0.24, green: 0.45, blue: 0.30)
-    static let warning = Color(red: 0.62, green: 0.41, blue: 0.18)
-    static let rose = Color(red: 0.65, green: 0.29, blue: 0.28)
+    static let background = Color(red: 0.95, green: 0.97, blue: 0.99)
+    static let backgroundAccent = Color(red: 0.88, green: 0.92, blue: 0.98)
+    static let card = Color.white
+    static let cardMuted = Color(red: 0.94, green: 0.96, blue: 0.99)
+    static let ink = Color(red: 0.10, green: 0.14, blue: 0.20)
+    static let slate = Color(red: 0.39, green: 0.46, blue: 0.56)
+    static let line = Color(red: 0.85, green: 0.89, blue: 0.94)
+    static let accent = Color(red: 0.14, green: 0.45, blue: 0.96)
+    static let accentSoft = Color(red: 0.86, green: 0.92, blue: 1.0)
+    static let success = Color(red: 0.17, green: 0.63, blue: 0.40)
+    static let warning = Color(red: 0.90, green: 0.55, blue: 0.16)
+    static let rose = Color(red: 0.86, green: 0.27, blue: 0.31)
 
     static let heroGradient = LinearGradient(
         colors: [
-            Color(red: 0.18, green: 0.18, blue: 0.17),
-            Color(red: 0.28, green: 0.27, blue: 0.24),
-            Color(red: 0.44, green: 0.40, blue: 0.33)
+            Color(red: 0.20, green: 0.50, blue: 0.98),
+            Color(red: 0.29, green: 0.60, blue: 1.0),
+            Color(red: 0.63, green: 0.78, blue: 1.0)
         ],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
