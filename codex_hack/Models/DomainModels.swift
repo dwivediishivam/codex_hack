@@ -254,18 +254,15 @@ extension MicroApp {
         ]
     )
 
-    static let sampleData: [MicroApp] = [
+    static let sampleData: [MicroApp] = []
+
+    static let publicShowcase: [MicroApp] = [
         spendHours,
-        guestDesk,
-        renewalRadar,
-        briefDeck,
         polaroidPrint
     ]
 
-    static let publicShowcase: [MicroApp] = sampleData.filter { $0.visibility == .publicApp }
-
     static func template(named name: String) -> MicroApp? {
-        sampleData.first { $0.name.caseInsensitiveCompare(name) == .orderedSame }
+        publicShowcase.first { $0.name.caseInsensitiveCompare(name) == .orderedSame }
     }
 }
 

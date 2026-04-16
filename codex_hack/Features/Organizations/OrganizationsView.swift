@@ -5,10 +5,22 @@ struct OrganizationsView: View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 12) {
-                    instructionRow(number: "1", text: "Write one clear prompt.")
-                    instructionRow(number: "2", text: "Choose Private, Public, or Org.")
-                    instructionRow(number: "3", text: "Create the app.")
-                    instructionRow(number: "4", text: "Open it. Edit it. Publish it.")
+                    guideCard(
+                        title: "Purpose",
+                        text: "Foundry lets you build very small apps for one clear job."
+                    )
+                    guideCard(
+                        title: "Create",
+                        text: "Write a direct prompt. The app is built and added to your Apps tab."
+                    )
+                    guideCard(
+                        title: "Apps",
+                        text: "Apps only shows what you created or added for yourself."
+                    )
+                    guideCard(
+                        title: "Store",
+                        text: "The store keeps polished starter apps that you can open or save."
+                    )
                 }
                 .padding(20)
             }
@@ -17,20 +29,17 @@ struct OrganizationsView: View {
         }
     }
 
-    private func instructionRow(number: String, text: String) -> some View {
+    private func guideCard(title: String, text: String) -> some View {
         GlassCard {
-            HStack(spacing: 14) {
-                Text(number)
+            VStack(alignment: .leading, spacing: 8) {
+                Text(title)
                     .font(.system(.headline, design: .rounded, weight: .semibold))
                     .foregroundStyle(AppTheme.ink)
-                    .frame(width: 24)
-
                 Text(text)
                     .font(.system(.body, design: .rounded))
-                    .foregroundStyle(AppTheme.ink)
-
-                Spacer()
+                    .foregroundStyle(AppTheme.slate)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 }

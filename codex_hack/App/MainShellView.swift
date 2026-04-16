@@ -5,17 +5,17 @@ struct MainShellView: View {
 
     var body: some View {
         TabView(selection: $appModel.selectedTab) {
-            DashboardView()
-                .tabItem {
-                    Label(MainTab.apps.title, systemImage: MainTab.apps.symbol)
-                }
-                .tag(MainTab.apps)
-
             CreateAppView()
                 .tabItem {
                     Label(MainTab.create.title, systemImage: MainTab.create.symbol)
                 }
                 .tag(MainTab.create)
+
+            DashboardView()
+                .tabItem {
+                    Label(MainTab.apps.title, systemImage: MainTab.apps.symbol)
+                }
+                .tag(MainTab.apps)
 
             OrganizationsView()
                 .tabItem {

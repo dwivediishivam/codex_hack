@@ -20,12 +20,6 @@ struct AppDetailView: View {
                                 .font(.system(.subheadline, design: .rounded))
                                 .foregroundStyle(AppTheme.slate)
 
-                            HStack(spacing: 8) {
-                                TagChip(title: app.visibility.rawValue)
-                                TagChip(title: app.category.rawValue)
-                                TagChip(title: app.status.badgeText, isSelected: app.status == .ready)
-                            }
-
                             HStack(spacing: 10) {
                                 Button("Open App") {
                                     showViewer = true

@@ -12,12 +12,12 @@ final class AppModel: ObservableObject {
     @Published var isAuthenticating = false
     @Published var isSyncing = false
     @Published var syncError: String?
-    @Published var selectedTab: MainTab = .apps
+    @Published var selectedTab: MainTab = .create
     @Published var selectedApp: MicroApp?
     @Published var createPrompt = ""
     @Published var draftVisibility: AppVisibility = .privateApp
     @Published var draftAudience: BuildAudience = .personal
-    @Published var draftCategory: AppCategory = .planner
+    @Published var draftCategory: AppCategory = .custom
     @Published var generationMode: GenerationMode = .sharedRuntime
     @Published var recentApps = MicroApp.sampleData
     @Published var publicApps = MicroApp.publicShowcase
@@ -80,9 +80,6 @@ final class AppModel: ObservableObject {
     var starterPrompts: [String] {
         [
             MicroApp.spendHours.samplePrompt,
-            MicroApp.guestDesk.samplePrompt,
-            MicroApp.renewalRadar.samplePrompt,
-            MicroApp.briefDeck.samplePrompt,
             MicroApp.polaroidPrint.samplePrompt
         ]
     }
@@ -189,7 +186,7 @@ final class AppModel: ObservableObject {
 
         draftAudience = audience
         createPrompt = ""
-        selectedTab = .apps
+        selectedTab = .create
         syncError = nil
 
         guard session.isAuthenticated else {
@@ -249,8 +246,10 @@ final class AppModel: ObservableObject {
             let resolvedOwnerApps = try await ownerApps
             let resolvedStoreApps = try await storeApps
 
-            recentApps = resolvedOwnerApps.isEmpty ? MicroApp.sampleData : resolvedOwnerApps
-            publicApps = resolvedStoreApps.isEmpty ? MicroApp.publicShowcase : resolvedStoreApps
+            recentApps = resolvedOwnerApps
+            let curatedNames = Set(MicroApp.publicShowcase.map(\.name))
+            let curatedStoreApps = resolvedStoreApps.filter { curatedNames.contains($0.name) }
+            publicApps = curatedStoreApps.isEmpty ? MicroApp.publicShowcase : curatedStoreApps
             organizations = WorkspaceOrganization.using(recentApps)
             syncError = nil
             hasLoadedRemoteState = true
@@ -277,7 +276,7 @@ final class AppModel: ObservableObject {
         session.isAuthenticated = false
         session.accessToken = nil
         authPassword = ""
-        selectedTab = .apps
+        selectedTab = .create
         syncError = nil
         hasLoadedRemoteState = false
         recentApps = MicroApp.sampleData

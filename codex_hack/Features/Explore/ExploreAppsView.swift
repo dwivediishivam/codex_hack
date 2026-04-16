@@ -2,7 +2,6 @@ import SwiftUI
 
 struct ExploreAppsView: View {
     @EnvironmentObject private var appModel: AppModel
-    @State private var selectedCategory: AppCategory?
     @State private var searchText = ""
 
     var body: some View {
@@ -17,26 +16,6 @@ struct ExploreAppsView: View {
                                 .stroke(AppTheme.line, lineWidth: 1)
                         )
 
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
-                            Button {
-                                selectedCategory = nil
-                            } label: {
-                                TagChip(title: "All", isSelected: selectedCategory == nil)
-                            }
-                            .buttonStyle(.plain)
-
-                            ForEach(AppCategory.allCases.filter { $0 != .dashboard }) { category in
-                                Button {
-                                    selectedCategory = category
-                                } label: {
-                                    TagChip(title: category.rawValue, isSelected: selectedCategory == category)
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                    }
-
                     ForEach(filteredApps, id: \.id) { app in
                         GlassCard {
                             VStack(alignment: .leading, spacing: 12) {
@@ -49,19 +28,31 @@ struct ExploreAppsView: View {
                                     .foregroundStyle(AppTheme.slate)
                                     .lineLimit(2)
 
-                                HStack(spacing: 8) {
-                                    TagChip(title: app.category.rawValue)
-                                    TagChip(title: "\(app.metrics.favorites) saves")
-                                }
-
                                 HStack(spacing: 10) {
                                     Button("Open") {
                                         appModel.selectedApp = app
                                     }
                                     .buttonStyle(CTAButtonStyle())
 
-                                    Button("Remix") {
-                                        appModel.requestPublicRemix(from: app)
+                                    Button("Add") {
+                                        let owned = MicroApp(
+                                            id: UUID(),
+                                            name: app.name,
+                                            tagline: app.tagline,
+                                            summary: app.summary,
+                                            storeNote: app.storeNote,
+                                            samplePrompt: app.samplePrompt,
+                                            category: app.category,
+                                            visibility: .privateApp,
+                                            audience: .personal,
+                                            status: .ready,
+                                            completion: 1,
+                                            deploymentURL: app.deploymentURL,
+                                            lastEdited: .now,
+                                            metrics: app.metrics,
+                                            updates: app.updates
+                                        )
+                                        appModel.recentApps.insert(owned, at: 0)
                                     }
                                     .buttonStyle(CTAButtonStyle(prominent: false))
                                 }
@@ -77,12 +68,10 @@ struct ExploreAppsView: View {
     }
 
     private var filteredApps: [MicroApp] {
-        appModel.publicApps.filter { app in
-            let categoryMatch = selectedCategory == nil || app.category == selectedCategory
-            let searchMatch = searchText.isEmpty
-                || app.name.localizedCaseInsensitiveContains(searchText)
-                || app.summary.localizedCaseInsensitiveContains(searchText)
-            return categoryMatch && searchMatch
+        appModel.publicApps.filter {
+            searchText.isEmpty
+                || $0.name.localizedCaseInsensitiveContains(searchText)
+                || $0.summary.localizedCaseInsensitiveContains(searchText)
         }
     }
 }

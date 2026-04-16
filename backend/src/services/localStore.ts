@@ -18,7 +18,7 @@ export async function listLocalApps(ownerId?: string) {
   const state = await loadState();
   const items = state.microApps.filter((app) => {
     if (!ownerId) return true;
-    return app.owner_id === ownerId || app.visibility !== "private";
+    return app.owner_id === ownerId;
   });
 
   return sortByUpdated(items);
@@ -126,48 +126,6 @@ function buildSeedState(): LocalStoreState {
       deployment_url: `${publicDeploymentUrl}/micro-apps/spend-hours`,
       created_at: new Date(now - 86_400_000).toISOString(),
       updated_at: new Date(now - 4_200_000).toISOString()
-    },
-    {
-      id: randomUUID(),
-      owner_id: "foundry-demo",
-      name: "Guest Desk",
-      summary: "Check guests in, track VIP notes, and keep one clear arrival screen.",
-      visibility: "public",
-      audience: "operations",
-      category: "event",
-      generation_mode: "instant",
-      status: "ready",
-      deployment_url: `${publicDeploymentUrl}/micro-apps/guest-desk`,
-      created_at: new Date(now - 72_000_000).toISOString(),
-      updated_at: new Date(now - 12_800_000).toISOString()
-    },
-    {
-      id: randomUUID(),
-      owner_id: "atlas-ops",
-      name: "Renewal Radar",
-      summary: "Track renewal dates, owners, and keep-or-cancel decisions in one shared flow.",
-      visibility: "organization",
-      audience: "team",
-      category: "operations",
-      generation_mode: "instant",
-      status: "reviewing",
-      deployment_url: `${publicDeploymentUrl}/micro-apps/renewal-radar`,
-      created_at: new Date(now - 64_000_000).toISOString(),
-      updated_at: new Date(now - 6_200_000).toISOString()
-    },
-    {
-      id: randomUUID(),
-      owner_id: "foundry-demo",
-      name: "Brief Deck",
-      summary: "Capture priorities, blockers, schedule, and key decisions for the day.",
-      visibility: "private",
-      audience: "personal",
-      category: "planner",
-      generation_mode: "instant",
-      status: "building",
-      deployment_url: `${publicDeploymentUrl}/micro-apps/brief-deck`,
-      created_at: new Date(now - 32_000_000).toISOString(),
-      updated_at: new Date(now - 3_400_000).toISOString()
     },
     {
       id: randomUUID(),

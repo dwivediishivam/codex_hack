@@ -1,239 +1,310 @@
 "use client";
 
+import { createClient, type Session } from "@supabase/supabase-js";
+import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
-type Visibility = "Private" | "Public" | "Org";
-type Category = "Planner" | "Finance" | "Event" | "Operations" | "Custom";
-type Tab = "Apps" | "Create" | "Guide" | "Store" | "Profile";
+type Tab = "Create" | "Apps" | "Guide" | "Store" | "Profile";
+type StoreCategory = "All" | "Finance" | "Creative";
 
-type AppCard = {
+type CatalogApp = {
+  id: string;
   name: string;
   summary: string;
-  visibility: Visibility;
-  category: Category;
-  status: string;
-  saves: number;
+  detail: string;
+  category: Exclude<StoreCategory, "All">;
   prompt: string;
-  url: string;
+  route: string;
 };
 
-type RemoteAppRecord = {
+type OwnedApp = {
+  id: string;
   name: string;
   summary: string;
-  visibility: "private" | "public" | "organization";
-  category: string;
-  status: string;
-  deploymentUrl?: string | null;
+  prompt: string;
+  route: string;
+  source: "store" | "created";
 };
+
+type CustomAppSpec = {
+  id: string;
+  name: string;
+  summary: string;
+  prompt: string;
+  focus: string[];
+};
+
+type BuildStep = "Thinking" | "Planning" | "Building" | "Finishing";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://hgwcvmkeqammsdblgezf.supabase.co",
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhnd2N2bWtlcWFtbXNkYmxnZXpmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMTc3MzYsImV4cCI6MjA5MTg5MzczNn0.ZtrDeRwRo02GctrhZyjgl01IR-2dmfc5XeODvPY2dLg"
+);
 
 const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
-const tabs: Tab[] = ["Apps", "Create", "Guide", "Store", "Profile"];
+const tabs: Tab[] = ["Create", "Apps", "Guide", "Store", "Profile"];
 
-const sampleApps: AppCard[] = [
+const storeCatalog: CatalogApp[] = [
   {
+    id: "spend-hours",
     name: "Spend Hours",
-    summary: "See what a purchase costs in working hours.",
-    visibility: "Public",
+    summary: "Turn any price into work hours or life hours.",
+    detail: "Set your pay once, choose work time or life time, and see what a purchase really costs.",
     category: "Finance",
-    status: "Ready",
-    saves: 312,
-    prompt: "Make me a small app that shows how many work hours I need for any purchase before I spend.",
-    url: "/micro-apps/spend-hours"
+    prompt: "Make a small app that shows how many hours of work or life any purchase costs.",
+    route: "/micro-apps/spend-hours"
   },
   {
-    name: "Guest Desk",
-    summary: "Simple guest check-in for small events.",
-    visibility: "Public",
-    category: "Event",
-    status: "Ready",
-    saves: 196,
-    prompt: "Build a tiny event check-in app with guest status, VIP notes, and a live capacity count.",
-    url: "/micro-apps/guest-desk"
-  },
-  {
-    name: "Renewal Radar",
-    summary: "Track renewals, owners, and keep or cancel calls.",
-    visibility: "Org",
-    category: "Operations",
-    status: "In Review",
-    saves: 21,
-    prompt: "Create a renewal tracker for our team with owners, decision dates, and a keep or cancel note.",
-    url: "/micro-apps/renewal-radar"
-  },
-  {
-    name: "Brief Deck",
-    summary: "Capture priorities, blockers, and timings for the day.",
-    visibility: "Private",
-    category: "Planner",
-    status: "Building",
-    saves: 4,
-    prompt: "Make a daily brief app with priorities, blockers, schedule, and decision log for a small team.",
-    url: "/micro-apps/brief-deck"
-  },
-  {
+    id: "polaroid-print",
     name: "Polaroid Print",
-    summary: "Take photos and prepare polaroids for A4 or A3 print sheets.",
-    visibility: "Public",
-    category: "Custom",
-    status: "Ready",
-    saves: 119,
-    prompt: "Make an app that takes pictures and outputs polaroids in different sizes with A4 and A3 print sheets.",
-    url: "/micro-apps/polaroid-print"
+    summary: "Make instant-film style prints from one or many photos.",
+    detail: "Preview one photo, process batches, and export an A4 PDF laid out at print-friendly sizes.",
+    category: "Creative",
+    prompt: "Make an app that turns photos into print-ready polaroids with a single preview and an A4 batch sheet.",
+    route: "/micro-apps/polaroid-print"
   }
 ];
 
 export default function HomePage() {
-  const [signedIn, setSignedIn] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
+  const [authReady, setAuthReady] = useState(false);
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [activeTab, setActiveTab] = useState<Tab>("Apps");
+  const [authBusy, setAuthBusy] = useState(false);
+  const [authError, setAuthError] = useState("");
+  const [activeTab, setActiveTab] = useState<Tab>("Create");
   const [prompt, setPrompt] = useState("");
-  const [visibility, setVisibility] = useState<Visibility>("Private");
-  const [category, setCategory] = useState<Category>("Planner");
-  const [apps, setApps] = useState<AppCard[]>(sampleApps);
-  const [storeApps, setStoreApps] = useState<AppCard[]>(sampleApps.filter((app) => app.visibility === "Public"));
   const [appSearch, setAppSearch] = useState("");
   const [storeSearch, setStoreSearch] = useState("");
-  const [appFilter, setAppFilter] = useState<Visibility | "All">("All");
-  const [storeFilter, setStoreFilter] = useState<Category | "All">("All");
+  const [storeCategory, setStoreCategory] = useState<StoreCategory>("All");
+  const [ownedApps, setOwnedApps] = useState<OwnedApp[]>([]);
+  const [isCreating, setIsCreating] = useState(false);
+  const [buildStep, setBuildStep] = useState<BuildStep>("Thinking");
+
+  const userEmail = session?.user.email ?? "";
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const savedSignedIn = window.localStorage.getItem("foundry.signedIn");
-    const savedEmail = window.localStorage.getItem("foundry.email");
-    const savedTab = window.localStorage.getItem("foundry.tab") as Tab | null;
-
-    if (savedSignedIn == "true") {
-      setSignedIn(true);
+    if (typeof window !== "undefined") {
+      const savedTab = window.localStorage.getItem("foundry.tab") as Tab | null;
+      if (savedTab && tabs.includes(savedTab)) {
+        setActiveTab(savedTab);
+      }
     }
 
-    if (savedEmail) {
-      setEmail(savedEmail);
-    }
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session ?? null);
+      if (data.session?.user.email) {
+        setEmail(data.session.user.email);
+      }
+      setAuthReady(true);
+    });
 
-    if (savedTab && tabs.includes(savedTab)) {
-      setActiveTab(savedTab);
-    }
+    const {
+      data: { subscription }
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session?.user.email) {
+        setEmail(session.user.email);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    window.localStorage.setItem("foundry.signedIn", String(signedIn));
-    window.localStorage.setItem("foundry.email", email);
     window.localStorage.setItem("foundry.tab", activeTab);
-  }, [signedIn, email, activeTab]);
+  }, [activeTab]);
 
   useEffect(() => {
+    if (!userEmail || typeof window === "undefined") {
+      setOwnedApps([]);
+      return;
+    }
+
+    const local = readOwnedApps(userEmail);
+    setOwnedApps(local);
+
+    if (!apiBase) return;
+
     let cancelled = false;
-
-    async function load() {
-      if (!apiBase) return;
-
+    void (async () => {
       try {
-        const [appsResponse, publicResponse] = await Promise.all([
-          fetch(`${apiBase}/api/micro-apps?ownerId=${encodeURIComponent(email || "web-demo-user")}`, { cache: "no-store" }),
-          fetch(`${apiBase}/api/micro-apps/public`, { cache: "no-store" })
-        ]);
-
-        if (!appsResponse.ok || !publicResponse.ok) return;
-
-        const appsPayload = (await appsResponse.json()) as { items: RemoteAppRecord[] };
-        const publicPayload = (await publicResponse.json()) as { items: RemoteAppRecord[] };
+        const response = await fetch(`${apiBase}/api/micro-apps?ownerId=${encodeURIComponent(userEmail)}`, {
+          cache: "no-store"
+        });
+        if (!response.ok) return;
+        const payload = (await response.json()) as {
+          items: Array<{ id: string; name: string; summary: string; deployment_url?: string | null; prompt?: string }>;
+        };
 
         if (cancelled) return;
 
-        if (appsPayload.items.length > 0) {
-          setApps(appsPayload.items.map(mapRemoteApp));
-        }
+        const remoteApps = payload.items.map((item) => ({
+          id: item.id,
+          name: item.name,
+          summary: item.summary,
+          prompt: item.prompt ?? item.summary,
+          route: item.deployment_url || `/micro-apps/custom/${item.id}`,
+          source: "created" as const
+        }));
 
-        if (publicPayload.items.length > 0) {
-          setStoreApps(publicPayload.items.map(mapRemoteApp));
-        }
+        const merged = mergeOwnedApps(local, remoteApps);
+        setOwnedApps(merged);
+        writeOwnedApps(userEmail, merged);
       } catch {
-        // Keep local sample state when API is not available.
+        // Local fallback remains active for the web shell.
       }
-    }
+    })();
 
-    void load();
     return () => {
       cancelled = true;
     };
-  }, [email]);
+  }, [userEmail]);
 
-  const filteredApps = useMemo(() => {
-    return apps.filter((app) => {
-      const filterMatch = appFilter === "All" || app.visibility === appFilter;
-      const searchMatch =
-        appSearch.length === 0 ||
-        app.name.toLowerCase().includes(appSearch.toLowerCase()) ||
-        app.summary.toLowerCase().includes(appSearch.toLowerCase());
-      return filterMatch && searchMatch;
+  const filteredOwnedApps = useMemo(() => {
+    return ownedApps.filter((app) => {
+      const query = appSearch.trim().toLowerCase();
+      if (!query) return true;
+      return app.name.toLowerCase().includes(query) || app.summary.toLowerCase().includes(query);
     });
-  }, [appFilter, appSearch, apps]);
+  }, [appSearch, ownedApps]);
 
-  const filteredStore = useMemo(() => {
-    return storeApps.filter((app) => {
-      const filterMatch = storeFilter === "All" || app.category === storeFilter;
+  const filteredStoreApps = useMemo(() => {
+    return storeCatalog.filter((app) => {
+      const categoryMatch = storeCategory === "All" || app.category === storeCategory;
+      const query = storeSearch.trim().toLowerCase();
       const searchMatch =
-        storeSearch.length === 0 ||
-        app.name.toLowerCase().includes(storeSearch.toLowerCase()) ||
-        app.summary.toLowerCase().includes(storeSearch.toLowerCase());
-      return filterMatch && searchMatch;
+        !query || app.name.toLowerCase().includes(query) || app.summary.toLowerCase().includes(query);
+      return categoryMatch && searchMatch;
     });
-  }, [storeApps, storeFilter, storeSearch]);
+  }, [storeCategory, storeSearch]);
 
-  function handleAuthSubmit(event: FormEvent) {
+  async function handleAuthSubmit(event: FormEvent) {
     event.preventDefault();
-    setSignedIn(true);
+    setAuthBusy(true);
+    setAuthError("");
+
+    try {
+      if (authMode === "signin") {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase.auth.signUp({ email, password });
+        if (error) throw error;
+
+        if (!data.session) {
+          setAuthError("Check your email to confirm the account, then log in.");
+        }
+      }
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : "Could not sign in.");
+    } finally {
+      setAuthBusy(false);
+    }
   }
 
   async function handleCreate(event: FormEvent) {
     event.preventDefault();
-    if (!prompt.trim()) return;
 
-    if (!apiBase) {
-      const local = buildLocalApp(prompt, visibility, category);
-      setApps((current) => [local, ...current.filter((item) => item.name !== local.name)]);
-      if (local.visibility === "Public") {
-        setStoreApps((current) => [local, ...current.filter((item) => item.name !== local.name)]);
+    const trimmed = prompt.trim();
+    if (!trimmed || !userEmail) return;
+
+    setIsCreating(true);
+    setBuildStep("Thinking");
+    await wait(500);
+    setBuildStep("Planning");
+    await wait(700);
+    setBuildStep("Building");
+
+    const spec = buildCustomAppSpec(trimmed);
+    const ownedApp: OwnedApp = {
+      id: spec.id,
+      name: spec.name,
+      summary: spec.summary,
+      prompt: spec.prompt,
+      route: `/micro-apps/custom/${spec.id}`,
+      source: "created"
+    };
+
+    storeCustomSpec(spec);
+
+    if (apiBase) {
+      try {
+        await fetch(`${apiBase}/api/micro-apps`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ownerId: userEmail,
+            name: spec.name,
+            prompt: spec.prompt,
+            visibility: "private",
+            audience: "personal",
+            category: "custom",
+            generationMode: "instant"
+          })
+        });
+      } catch {
+        // The web shell still keeps a local deployed route even when the API is unavailable.
       }
-      setActiveTab("Apps");
-      return;
     }
 
-    try {
-      const response = await fetch(`${apiBase}/api/micro-apps`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ownerId: email || "web-demo-user",
-          name: deriveTitle(prompt),
-          prompt,
-          visibility: visibility === "Org" ? "organization" : visibility.toLowerCase(),
-          audience: visibility === "Org" ? "team" : visibility === "Public" ? "consumer" : "personal",
-          category: category.toLowerCase(),
-          generationMode: "instant"
-        })
-      });
+    await wait(800);
+    setBuildStep("Finishing");
+    await wait(500);
 
-      const payload = await response.json();
-      if (!response.ok) return;
-
-      const created = mapRemoteApp(payload.app as RemoteAppRecord);
-      setApps((current) => [created, ...current.filter((item) => item.name !== created.name)]);
-      if (created.visibility === "Public") {
-        setStoreApps((current) => [created, ...current.filter((item) => item.name !== created.name)]);
-      }
-      setPrompt("");
-      setActiveTab("Apps");
-    } catch {
-      // Silent fallback for the shell.
-    }
+    const updated = mergeOwnedApps(ownedApps, [ownedApp]);
+    setOwnedApps(updated);
+    writeOwnedApps(userEmail, updated);
+    setPrompt("");
+    setActiveTab("Apps");
+    setIsCreating(false);
   }
 
-  if (!signedIn) {
+  function addStoreApp(app: CatalogApp) {
+    if (!userEmail) return;
+
+    const ownedApp: OwnedApp = {
+      id: app.id,
+      name: app.name,
+      summary: app.summary,
+      prompt: app.prompt,
+      route: app.route,
+      source: "store"
+    };
+
+    const updated = mergeOwnedApps(ownedApps, [ownedApp]);
+    setOwnedApps(updated);
+    writeOwnedApps(userEmail, updated);
+    setActiveTab("Apps");
+  }
+
+  async function signOut() {
+    await supabase.auth.signOut();
+    setOwnedApps([]);
+    setPrompt("");
+    setActiveTab("Create");
+  }
+
+  if (!authReady) {
+    return (
+      <main className="shell auth-shell">
+        <section className="auth-card">
+          <img src="/logo.png" alt="Foundry logo" className="brand-mark large" />
+          <div className="loader-card">
+            <div className="loader-bar">
+              <span className="loader-fill step-building" />
+            </div>
+            <strong>Loading</strong>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  if (!session) {
     return (
       <main className="shell auth-shell">
         <section className="auth-card">
@@ -263,8 +334,9 @@ export default function HomePage() {
               placeholder="Password"
               type="password"
             />
-            <button className="primary-button" type="submit">
-              {authMode === "signin" ? "Log In" : "Create Account"}
+            {authError ? <p className="auth-error">{authError}</p> : null}
+            <button className="primary-button" type="submit" disabled={authBusy}>
+              {authBusy ? "Please wait" : authMode === "signin" ? "Log In" : "Create Account"}
             </button>
           </form>
         </section>
@@ -277,107 +349,93 @@ export default function HomePage() {
       <section className="phone-frame">
         <header className="top-bar">
           <img src="/logo.png" alt="Foundry logo" className="brand-mark" />
-          <span>{StudioHeader(activeTab)}</span>
+          <span>{activeTab}</span>
         </header>
 
         <section className="content-stack">
-          {activeTab === "Apps" && (
-            <>
-              <input
-                className="search-input"
-                value={appSearch}
-                onChange={(event) => setAppSearch(event.target.value)}
-                placeholder="Search apps"
-              />
-              <div className="chip-row">
-                {(["All", "Private", "Public", "Org"] as const).map((item) => (
-                  <button
-                    type="button"
-                    key={item}
-                    className={`chip-button ${appFilter === item ? "active" : ""}`}
-                    onClick={() => setAppFilter(item)}
-                  >
-                    {item}
-                  </button>
-                ))}
-              </div>
-              {filteredApps.map((app) => (
-                <article className="panel app-row" key={app.name}>
-                  <div>
-                    <h3>{app.name}</h3>
-                    <p>{app.summary}</p>
-                  </div>
-                  <div className="chip-row compact">
-                    <span className="chip">{app.visibility}</span>
-                    <span className="chip">{app.status}</span>
-                  </div>
-                  <div className="row">
-                    <a className="primary-button inline" href={app.url}>
-                      Open
-                    </a>
-                    <button
-                      className="secondary-button inline"
-                      onClick={() => {
-                        setPrompt(`Update ${app.name}: `);
-                        setVisibility(app.visibility);
-                        setCategory(app.category);
-                        setActiveTab("Create");
-                      }}
-                    >
-                      Edit
-                    </button>
-                  </div>
-                </article>
-              ))}
-            </>
-          )}
-
           {activeTab === "Create" && (
             <section className="create-screen">
               <form className="create-card" onSubmit={handleCreate}>
                 <textarea
                   value={prompt}
                   onChange={(event) => setPrompt(event.target.value)}
-                  placeholder="Describe the app"
+                  placeholder="Describe the app you want"
                 />
-                <div className="chip-row center">
-                  {(["Private", "Public", "Org"] as Visibility[]).map((item) => (
-                    <button
-                      type="button"
-                      key={item}
-                      className={`chip-button ${visibility === item ? "active" : ""}`}
-                      onClick={() => setVisibility(item)}
-                    >
-                      {item}
-                    </button>
-                  ))}
-                </div>
-                <div className="chip-row center">
-                  {(["Planner", "Finance", "Event", "Operations", "Custom"] as Category[]).map((item) => (
-                    <button
-                      type="button"
-                      key={item}
-                      className={`chip-button ${category === item ? "active" : ""}`}
-                      onClick={() => setCategory(item)}
-                    >
-                      {item}
-                    </button>
-                  ))}
-                </div>
-                <button className="primary-button" type="submit">
-                  Create
+                <button className="primary-button" type="submit" disabled={isCreating}>
+                  {isCreating ? "Building..." : "Create App"}
                 </button>
+                {isCreating ? (
+                  <div className="loader-card">
+                    <div className="loader-bar">
+                      <span className={`loader-fill step-${buildStep.toLowerCase()}`} />
+                    </div>
+                    <strong>{buildStep}</strong>
+                    <span>Your app will appear in Apps when the build completes.</span>
+                  </div>
+                ) : null}
               </form>
             </section>
           )}
 
+          {activeTab === "Apps" && (
+            <>
+              <input
+                className="search-input"
+                value={appSearch}
+                onChange={(event) => setAppSearch(event.target.value)}
+                placeholder="Search your apps"
+              />
+
+              {filteredOwnedApps.length == 0 ? (
+                <section className="panel empty-panel">
+                  <h3>No apps yet</h3>
+                  <p>Create one or add one from the store.</p>
+                </section>
+              ) : (
+                filteredOwnedApps.map((app) => (
+                  <article className="panel app-row" key={app.id}>
+                    <div>
+                      <h3>{app.name}</h3>
+                      <p>{app.summary}</p>
+                    </div>
+                    <div className="row">
+                      <Link className="primary-button inline" href={app.route}>
+                        Open
+                      </Link>
+                      <button
+                        className="secondary-button inline"
+                        onClick={() => {
+                          setPrompt(`Update ${app.name}: ${app.prompt}`);
+                          setActiveTab("Create");
+                        }}
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  </article>
+                ))
+              )}
+            </>
+          )}
+
           {activeTab === "Guide" && (
             <section className="stack-list">
-              {["Write one clear prompt.", "Pick where it lives.", "Create the app.", "Open it or edit it."].map((item) => (
-                <article className="panel line-row" key={item}>
-                  <span>{item}</span>
-                </article>
-              ))}
+              <article className="panel guide-panel">
+                <h3>What this app is</h3>
+                <p>Foundry is for small apps with one clear job. Build your own or save one from the store.</p>
+              </article>
+              <article className="panel guide-panel">
+                <h3>Create</h3>
+                <p>Write one direct prompt. Foundry turns it into a personal app and adds it to your Apps tab.</p>
+              </article>
+              <article className="panel guide-panel">
+                <h3>Apps</h3>
+                <p>Your Apps tab only shows apps you created or added for yourself.</p>
+              </article>
+              <article className="panel guide-panel">
+                <h3>Store</h3>
+                <p>The store holds polished starter apps that you can open or save into your own workspace.</p>
+              </article>
             </section>
           )}
 
@@ -389,42 +447,31 @@ export default function HomePage() {
                 onChange={(event) => setStoreSearch(event.target.value)}
                 placeholder="Search store"
               />
-              <div className="chip-row">
-                {(["All", "Planner", "Finance", "Event", "Operations", "Custom"] as const).map((item) => (
+              <div className="segmented store-filter">
+                {(["All", "Finance", "Creative"] as const).map((item) => (
                   <button
                     type="button"
                     key={item}
-                    className={`chip-button ${storeFilter === item ? "active" : ""}`}
-                    onClick={() => setStoreFilter(item)}
+                    className={storeCategory === item ? "active" : ""}
+                    onClick={() => setStoreCategory(item)}
                   >
                     {item}
                   </button>
                 ))}
               </div>
-              {filteredStore.map((app) => (
-                <article className="panel app-row" key={app.name}>
+              {filteredStoreApps.map((app) => (
+                <article className="panel app-row" key={app.id}>
                   <div>
                     <h3>{app.name}</h3>
                     <p>{app.summary}</p>
-                  </div>
-                  <div className="chip-row compact">
-                    <span className="chip">{app.category}</span>
-                    <span className="chip">{app.saves} saves</span>
+                    <small>{app.detail}</small>
                   </div>
                   <div className="row">
-                    <a className="primary-button inline" href={app.url}>
+                    <Link className="primary-button inline" href={app.route}>
                       Open
-                    </a>
-                    <button
-                      className="secondary-button inline"
-                      onClick={() => {
-                        setPrompt(app.prompt);
-                        setCategory(app.category);
-                        setVisibility("Private");
-                        setActiveTab("Create");
-                      }}
-                    >
-                      Remix
+                    </Link>
+                    <button className="secondary-button inline" onClick={() => addStoreApp(app)}>
+                      Add
                     </button>
                   </div>
                 </article>
@@ -436,26 +483,17 @@ export default function HomePage() {
             <section className="stack-list">
               <article className="panel line-row">
                 <span>Email</span>
-                <strong>{email || "demo@foundry.app"}</strong>
+                <strong>{userEmail}</strong>
               </article>
               <article className="panel line-row">
-                <span>Apps</span>
-                <strong>{apps.length}</strong>
+                <span>Your apps</span>
+                <strong>{ownedApps.length}</strong>
               </article>
               <article className="panel line-row">
-                <span>Public</span>
-                <strong>{storeApps.length}</strong>
+                <span>Store apps</span>
+                <strong>{storeCatalog.length}</strong>
               </article>
-              <button
-                className="secondary-button"
-                onClick={() => {
-                  setSignedIn(false);
-                  if (typeof window !== "undefined") {
-                    window.localStorage.removeItem("foundry.signedIn");
-                    window.localStorage.removeItem("foundry.tab");
-                  }
-                }}
-              >
+              <button className="secondary-button" onClick={() => void signOut()}>
                 Sign Out
               </button>
             </section>
@@ -474,41 +512,18 @@ export default function HomePage() {
   );
 }
 
-function mapRemoteApp(record: RemoteAppRecord): AppCard {
-  const template = sampleApps.find((item) => item.name.toLowerCase() === record.name.toLowerCase());
+function buildCustomAppSpec(prompt: string): CustomAppSpec {
+  const name = deriveTitle(prompt);
+  const summary = deriveSummary(prompt);
+  const focus = deriveFocus(prompt);
 
   return {
-    name: record.name,
-    summary: record.summary,
-    visibility: mapVisibility(record.visibility),
-    category: mapCategory(record.category),
-    status: mapStatus(record.status),
-    saves: template?.saves ?? 0,
-    prompt: template?.prompt ?? record.summary,
-    url: record.deploymentUrl || template?.url || `/micro-apps/${slugify(record.name)}`
+    id: crypto.randomUUID(),
+    name,
+    summary,
+    prompt,
+    focus
   };
-}
-
-function mapVisibility(value: RemoteAppRecord["visibility"]): Visibility {
-  if (value === "public") return "Public";
-  if (value === "organization") return "Org";
-  return "Private";
-}
-
-function mapCategory(value: string): Category {
-  const lowered = value.toLowerCase();
-  if (lowered === "finance") return "Finance";
-  if (lowered === "event") return "Event";
-  if (lowered === "operations") return "Operations";
-  if (lowered === "custom") return "Custom";
-  return "Planner";
-}
-
-function mapStatus(value: string) {
-  if (value.toLowerCase() === "ready") return "Ready";
-  if (value.toLowerCase() === "reviewing") return "In Review";
-  if (value.toLowerCase() === "failed") return "Needs Fix";
-  return "Building";
 }
 
 function deriveTitle(prompt: string) {
@@ -523,25 +538,12 @@ function deriveTitle(prompt: string) {
     "need",
     "to",
     "into",
-    "before",
-    "after",
-    "this",
-    "it",
-    "any",
-    "one",
+    "for",
+    "with",
     "a",
     "an",
     "the",
-    "app",
-    "small",
-    "tiny",
-    "for",
-    "with",
-    "our",
-    "that",
-    "should",
-    "can",
-    "would"
+    "app"
   ]);
 
   const tokens = prompt
@@ -555,31 +557,56 @@ function deriveTitle(prompt: string) {
   return tokens.join(" ") || "New App";
 }
 
-function buildLocalApp(prompt: string, visibility: Visibility, category: Category): AppCard {
-  const name = deriveTitle(prompt);
-  return {
-    name,
-    summary: prompt,
-    visibility,
-    category,
-    status: visibility === "Public" ? "In Review" : "Building",
-    saves: 0,
-    prompt,
-    url: `/micro-apps/${slugify(name)}`
-  };
+function deriveSummary(prompt: string) {
+  const cleaned = prompt.trim().replace(/\s+/g, " ");
+  if (cleaned.length <= 88) return cleaned;
+  return `${cleaned.slice(0, 85).trim()}...`;
 }
 
-function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
+function deriveFocus(prompt: string) {
+  const parts = prompt
+    .split(/,| and | with /i)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .slice(0, 4);
+
+  return parts.length > 0 ? parts : ["One clear workflow", "Simple input", "A result screen"];
 }
 
-function StudioHeader(tab: Tab) {
-  if (tab === "Create") return "Create";
-  if (tab === "Guide") return "Guide";
-  if (tab === "Store") return "Store";
-  if (tab === "Profile") return "Profile";
-  return "Apps";
+function readOwnedApps(email: string): OwnedApp[] {
+  if (typeof window === "undefined") return [];
+  const raw = window.localStorage.getItem(`foundry.owned.${email}`);
+  if (!raw) return [];
+
+  try {
+    return JSON.parse(raw) as OwnedApp[];
+  } catch {
+    return [];
+  }
+}
+
+function writeOwnedApps(email: string, apps: OwnedApp[]) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(`foundry.owned.${email}`, JSON.stringify(apps));
+}
+
+function mergeOwnedApps(base: OwnedApp[], incoming: OwnedApp[]) {
+  const map = new Map<string, OwnedApp>();
+  [...base, ...incoming].forEach((app) => {
+    map.set(app.id, app);
+  });
+  return [...map.values()];
+}
+
+function storeCustomSpec(spec: CustomAppSpec) {
+  if (typeof window === "undefined") return;
+
+  const raw = window.localStorage.getItem("foundry.customApps");
+  const current = raw ? ((JSON.parse(raw) as CustomAppSpec[]) ?? []) : [];
+  const next = [spec, ...current.filter((item) => item.id !== spec.id)];
+  window.localStorage.setItem("foundry.customApps", JSON.stringify(next));
+}
+
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
