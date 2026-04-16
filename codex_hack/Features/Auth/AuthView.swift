@@ -17,9 +17,16 @@ struct AuthView: View {
 
     private var hero: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(StudioBrand.name)
-                .font(.system(size: 44, weight: .semibold, design: .serif))
-                .foregroundStyle(AppTheme.ink)
+            HStack(alignment: .center, spacing: 14) {
+                Image("BrandMark")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 58, height: 58)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                Text(StudioBrand.name)
+                    .font(.system(size: 44, weight: .semibold, design: .serif))
+                    .foregroundStyle(AppTheme.ink)
+            }
             Text(StudioBrand.tag)
                 .font(.headline)
                 .foregroundStyle(AppTheme.ink)

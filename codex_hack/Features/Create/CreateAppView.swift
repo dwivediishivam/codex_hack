@@ -33,7 +33,9 @@ struct CreateAppView: View {
                 .background(AppTheme.cardMuted, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
 
             Button("Start Build") {
-                appModel.submitDraft()
+                Task {
+                    await appModel.submitDraft()
+                }
             }
             .buttonStyle(CTAButtonStyle())
         }

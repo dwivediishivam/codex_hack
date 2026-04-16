@@ -1,20 +1,50 @@
 "use client";
 
-import { FormEvent, ReactNode, useMemo, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
 
 type Visibility = "Private" | "Public" | "Org";
 type Category = "Planner" | "Finance" | "Event" | "Operations";
 type Tab = "Home" | "Build" | "Store" | "Teams" | "Account";
 
-const sampleApps = [
+type AppCard = {
+  name: string;
+  tagline: string;
+  summary: string;
+  storeNote: string;
+  visibility: Visibility;
+  category: Category;
+  status: string;
+  saves: number;
+  runs: number;
+  progress: number;
+  samplePrompt: string;
+};
+
+type RemoteAppRecord = {
+  id: string;
+  name: string;
+  summary: string;
+  visibility: "private" | "public" | "organization";
+  audience: string;
+  category: string;
+  generationMode: string;
+  status: string;
+  deploymentUrl?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+
+const sampleApps: AppCard[] = [
   {
     name: "Spend Hours",
     tagline: "See what a purchase costs in working hours.",
     summary:
       "Turn any item into hours of work, compare impulse buys against planned spending, and keep a calmer view of what something really costs.",
     storeNote: "A strong public utility because the concept is universal and easy to understand in seconds.",
-    visibility: "Public" as Visibility,
-    category: "Finance" as Category,
+    visibility: "Public",
+    category: "Finance",
     status: "Ready",
     saves: 312,
     runs: 942,
@@ -28,8 +58,8 @@ const sampleApps = [
     summary:
       "Check guests in, mark VIP notes, track capacity, and keep one calm screen for the people at the door.",
     storeNote: "A useful public template for campus events, pop-ups, launches, and private gatherings.",
-    visibility: "Public" as Visibility,
-    category: "Event" as Category,
+    visibility: "Public",
+    category: "Event",
     status: "Ready",
     saves: 196,
     runs: 508,
@@ -43,8 +73,8 @@ const sampleApps = [
     summary:
       "A shared operations app for software renewals with owners, renewal dates, usage notes, and a clear keep or cancel decision.",
     storeNote: "Best used as an organization app where finance and ops need the same source of truth.",
-    visibility: "Org" as Visibility,
-    category: "Operations" as Category,
+    visibility: "Org",
+    category: "Operations",
     status: "In Review",
     saves: 21,
     runs: 68,
@@ -58,8 +88,8 @@ const sampleApps = [
     summary:
       "Capture today’s priorities, blockers, key timings, and decisions for a small team, event crew, or project room.",
     storeNote: "A good private default because each team’s brief is personal but the format stays broadly useful.",
-    visibility: "Private" as Visibility,
-    category: "Planner" as Category,
+    visibility: "Private",
+    category: "Planner",
     status: "Building",
     saves: 4,
     runs: 14,
@@ -97,19 +127,103 @@ export default function HomePage() {
   const [mode, setMode] = useState<"Instant" | "Advanced">("Instant");
   const [selectedCategory, setSelectedCategory] = useState<Category | "All">("All");
   const [notice, setNotice] = useState("Foundry keeps the shell quiet: one prompt, one build lane, one clear destination.");
+  const [apps, setApps] = useState<AppCard[]>(sampleApps);
+  const [storeApps, setStoreApps] = useState<AppCard[]>(sampleApps.filter((app) => app.visibility === "Public"));
 
-  const publicApps = useMemo(
-    () => sampleApps.filter((app) => app.visibility === "Public"),
-    []
-  );
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      if (!apiBase) return;
+
+      try {
+        const [recentResponse, publicResponse] = await Promise.all([
+          fetch(`${apiBase}/api/micro-apps?ownerId=web-demo-user`, { cache: "no-store" }),
+          fetch(`${apiBase}/api/micro-apps/public`, { cache: "no-store" })
+        ]);
+
+        if (!recentResponse.ok || !publicResponse.ok) {
+          return;
+        }
+
+        const recentPayload = (await recentResponse.json()) as { items: RemoteAppRecord[] };
+        const publicPayload = (await publicResponse.json()) as { items: RemoteAppRecord[] };
+
+        if (cancelled) return;
+
+        if (recentPayload.items.length > 0) {
+          setApps(recentPayload.items.map(mapRemoteApp));
+        }
+
+        if (publicPayload.items.length > 0) {
+          setStoreApps(publicPayload.items.map(mapRemoteApp));
+        }
+      } catch {
+        // The deployed web replica can still render the curated sample state when the local API is unavailable.
+      }
+    }
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const filteredStore = useMemo(() => {
     if (selectedCategory === "All") {
-      return publicApps;
+      return storeApps;
     }
 
-    return publicApps.filter((app) => app.category === selectedCategory);
-  }, [publicApps, selectedCategory]);
+    return storeApps.filter((app) => app.category === selectedCategory);
+  }, [selectedCategory, storeApps]);
+
+  async function handleBuildSubmit(event: FormEvent) {
+    event.preventDefault();
+
+    if (!apiBase) {
+      setNotice(
+        `Build drafted in ${mode.toLowerCase()} mode as a ${visibility.toLowerCase()} ${category.toLowerCase()} app.`
+      );
+      setActiveTab("Home");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${apiBase}/api/micro-apps`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          ownerId: email || "web-demo-user",
+          name: deriveTitle(prompt),
+          prompt,
+          visibility: visibility.toLowerCase() === "org" ? "organization" : visibility.toLowerCase(),
+          audience: visibility === "Org" ? "team" : visibility === "Public" ? "consumer" : "personal",
+          category: category.toLowerCase(),
+          generationMode: mode.toLowerCase()
+        })
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        setNotice(payload.error || "Build request failed.");
+        return;
+      }
+
+      const created = mapRemoteApp(payload.app as RemoteAppRecord);
+      setApps((current) => [created, ...current.filter((item) => item.name !== created.name)]);
+      if (created.visibility === "Public") {
+        setStoreApps((current) => [created, ...current.filter((item) => item.name !== created.name)]);
+      }
+      setNotice(`${created.name} is now in the build lane.`);
+      setActiveTab("Home");
+      setPrompt(created.samplePrompt);
+    } catch {
+      setNotice("The backend could not be reached from this web shell.");
+    }
+  }
 
   function handleAuthSubmit(event: FormEvent) {
     event.preventDefault();
@@ -121,25 +235,18 @@ export default function HomePage() {
     setActiveTab("Home");
   }
 
-  function handleBuildSubmit(event: FormEvent) {
-    event.preventDefault();
-    setNotice(
-      `Build queued in ${mode.toLowerCase()} mode as a ${visibility.toLowerCase()} ${category.toLowerCase()} app.`
-    );
-    setActiveTab("Home");
-  }
-
   return (
     <main className="shell">
       <section className="phone-frame">
         <header className="phone-header">
-          <div>
-            <div className="eyebrow">Foundry</div>
-            <h1>Micro apps, made to fit.</h1>
+          <div className="brand-lockup">
+            <img src="/logo.png" alt="Foundry logo" className="brand-mark" />
+            <div>
+              <div className="eyebrow">Foundry</div>
+              <h1>Micro apps, made to fit.</h1>
+            </div>
           </div>
-          <p>
-            Create private tools, public utilities, and workspace apps from a single prompt.
-          </p>
+          <p>Create private tools, public utilities, and workspace apps from a single prompt.</p>
         </header>
 
         <section className="notice-card">{notice}</section>
@@ -154,9 +261,9 @@ export default function HomePage() {
                   <p>Private builds, public store launches, and team apps all use the same structure.</p>
                 </div>
                 <div className="metric-row">
-                  <Metric label="Ready" value="2" />
-                  <Metric label="Building" value="2" />
-                  <Metric label="Store" value="2" />
+                  <Metric label="Ready" value={String(apps.filter((app) => app.status === "Ready").length)} />
+                  <Metric label="Building" value={String(apps.filter((app) => app.status !== "Ready").length)} />
+                  <Metric label="Store" value={String(storeApps.length)} />
                 </div>
               </section>
 
@@ -165,7 +272,7 @@ export default function HomePage() {
                   <span>Recent</span>
                   <h2>Apps in motion</h2>
                 </div>
-                {sampleApps.map((app) => (
+                {apps.map((app) => (
                   <article className="panel app-card" key={app.name}>
                     <div className="row top">
                       <div>
@@ -194,7 +301,7 @@ export default function HomePage() {
                   <span>Store</span>
                   <h2>Public apps worth remixing</h2>
                 </div>
-                {publicApps.map((app) => (
+                {storeApps.map((app) => (
                   <article className="panel" key={app.name}>
                     <div className="row top">
                       <div>
@@ -418,7 +525,7 @@ export default function HomePage() {
                 </div>
                 <div className="status-list">
                   <StatusRow label="Supabase" value="Ready" />
-                  <StatusRow label="Backend API" value="Ready" />
+                  <StatusRow label="Backend API" value={apiBase ? "Ready" : "Sample mode"} />
                   <StatusRow label="Email login" value="Ready" />
                 </div>
               </section>
@@ -462,4 +569,126 @@ function StatusRow({ label, value }: { label: string; value: string }) {
       <strong>{value}</strong>
     </div>
   );
+}
+
+function mapRemoteApp(record: RemoteAppRecord): AppCard {
+  const template = sampleApps.find((app) => app.name.toLowerCase() === record.name.toLowerCase());
+  const visibility = mapVisibility(record.visibility);
+  const category = mapCategory(record.category);
+  const status = mapStatus(record.status);
+  const progress = status === "Ready" ? 100 : status === "In Review" ? 84 : 34;
+
+  if (template) {
+    return {
+      ...template,
+      visibility,
+      category,
+      status,
+      progress
+    };
+  }
+
+  return {
+    name: record.name,
+    tagline:
+      visibility === "Public"
+        ? `A public ${category.toLowerCase()} utility ready for the store.`
+        : visibility === "Org"
+          ? `A shared ${category.toLowerCase()} app built for one workspace.`
+          : `A private ${category.toLowerCase()} tool shaped around one clear need.`,
+    summary: record.summary,
+    storeNote:
+      visibility === "Public"
+        ? "Public apps enter the store only after a review pass and quality check."
+        : visibility === "Org"
+          ? "Workspace apps inherit team visibility, version history, and ownership rules."
+          : "Private builds stay in your account until you choose to publish or share.",
+    visibility,
+    category,
+    status,
+    saves: 0,
+    runs: 0,
+    progress,
+    samplePrompt: record.summary
+  };
+}
+
+function mapVisibility(value: RemoteAppRecord["visibility"]): Visibility {
+  switch (value) {
+    case "public":
+      return "Public";
+    case "organization":
+      return "Org";
+    default:
+      return "Private";
+  }
+}
+
+function mapCategory(value: string): Category {
+  switch (value.toLowerCase()) {
+    case "finance":
+      return "Finance";
+    case "event":
+      return "Event";
+    case "operations":
+      return "Operations";
+    default:
+      return "Planner";
+  }
+}
+
+function mapStatus(value: string) {
+  switch (value.toLowerCase()) {
+    case "ready":
+      return "Ready";
+    case "reviewing":
+      return "In Review";
+    case "failed":
+      return "Needs Fix";
+    default:
+      return "Building";
+  }
+}
+
+function deriveTitle(prompt: string) {
+  const stopWords = new Set([
+    "make",
+    "build",
+    "create",
+    "me",
+    "my",
+    "i",
+    "want",
+    "need",
+    "to",
+    "into",
+    "before",
+    "after",
+    "this",
+    "it",
+    "any",
+    "one",
+    "a",
+    "an",
+    "the",
+    "app",
+    "small",
+    "tiny",
+    "for",
+    "with",
+    "our",
+    "that",
+    "should",
+    "can",
+    "would"
+  ]);
+  const tokens = prompt
+    .replace(/[^a-zA-Z0-9 ]/g, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .filter((token) => !stopWords.has(token.toLowerCase()))
+    .slice(0, 3)
+    .map((token) => token[0].toUpperCase() + token.slice(1).toLowerCase());
+
+  return tokens.join(" ") || "New App";
 }

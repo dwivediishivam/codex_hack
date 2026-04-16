@@ -38,6 +38,9 @@ struct MainShellView: View {
         .tint(AppTheme.accent)
         .toolbarBackground(AppTheme.card, for: .tabBar)
         .toolbarBackground(.visible, for: .tabBar)
+        .task {
+            await appModel.loadRemoteStateIfNeeded()
+        }
     }
 }
 

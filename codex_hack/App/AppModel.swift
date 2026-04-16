@@ -10,6 +10,8 @@ final class AppModel: ObservableObject {
     @Published var authPassword = ""
     @Published var authError: String?
     @Published var isAuthenticating = false
+    @Published var isSyncing = false
+    @Published var syncError: String?
     @Published var selectedTab: MainTab = .dashboard
     @Published var selectedApp: MicroApp?
     @Published var createPrompt = ""
@@ -20,6 +22,7 @@ final class AppModel: ObservableObject {
     @Published var recentApps = MicroApp.sampleData
     @Published var publicApps = MicroApp.publicShowcase
     @Published var organizations = WorkspaceOrganization.sampleData
+    private var hasLoadedRemoteState = false
 
     var featuredApps: [MicroApp] {
         recentApps
@@ -90,6 +93,7 @@ final class AppModel: ObservableObject {
             case .signUp:
                 try await AuthService.shared.signUp(payload: payload)
             }
+            await loadRemoteState(force: true)
         } catch {
             authError = error.localizedDescription
         }
@@ -105,16 +109,26 @@ final class AppModel: ObservableObject {
         session.accessToken = nil
         authPassword = ""
         selectedTab = .dashboard
+        syncError = nil
+        hasLoadedRemoteState = false
+        recentApps = MicroApp.sampleData
+        publicApps = MicroApp.publicShowcase
+        organizations = WorkspaceOrganization.sampleData
     }
 
-    func submitDraft() {
+    func loadRemoteStateIfNeeded() async {
+        guard session.isAuthenticated, !hasLoadedRemoteState else { return }
+        await loadRemoteState(force: false)
+    }
+
+    func submitDraft() async {
         let trimmed = createPrompt.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
         let visibility = draftVisibility
         let category = draftCategory
         let audience = inferredAudience(for: visibility)
-        let app = MicroApp(
+        let draft = MicroApp(
             id: UUID(),
             name: category.suggestedName(from: trimmed),
             tagline: draftLine(for: visibility, category: category),
@@ -140,15 +154,39 @@ final class AppModel: ObservableObject {
             ]
         )
 
-        recentApps.insert(app, at: 0)
-        if visibility == .publicApp {
-            publicApps.insert(app, at: 0)
-        }
-
         draftAudience = audience
         createPrompt = ""
         selectedTab = .dashboard
-        selectedApp = app
+        syncError = nil
+
+        guard session.isAuthenticated else {
+            insertOrReplace(draft)
+            selectedApp = draft
+            return
+        }
+
+        do {
+            let created = try await PlatformService.shared.createApp(
+                CreateMicroAppRequest(
+                    ownerID: session.profile.email,
+                    name: category.suggestedName(from: trimmed),
+                    prompt: trimmed,
+                    visibility: visibility,
+                    audience: audience,
+                    category: category,
+                    generationMode: generationMode
+                )
+            )
+
+            insertOrReplace(created)
+            selectedApp = created
+            hasLoadedRemoteState = false
+            await loadRemoteState(force: true)
+        } catch {
+            insertOrReplace(draft)
+            selectedApp = draft
+            syncError = error.localizedDescription
+        }
     }
 
     func requestPublicRemix(from app: MicroApp) {
@@ -162,6 +200,43 @@ final class AppModel: ObservableObject {
     func setDraftVisibility(_ visibility: AppVisibility) {
         draftVisibility = visibility
         draftAudience = inferredAudience(for: visibility)
+    }
+
+    private func loadRemoteState(force: Bool) async {
+        guard AppConfig.hasBackendConfiguration else { return }
+        if !force, hasLoadedRemoteState { return }
+
+        isSyncing = true
+        defer { isSyncing = false }
+
+        do {
+            async let ownerApps = PlatformService.shared.fetchApps(ownerID: session.profile.email)
+            async let storeApps = PlatformService.shared.fetchPublicApps()
+
+            let resolvedOwnerApps = try await ownerApps
+            let resolvedStoreApps = try await storeApps
+
+            recentApps = resolvedOwnerApps.isEmpty ? MicroApp.sampleData : resolvedOwnerApps
+            publicApps = resolvedStoreApps.isEmpty ? MicroApp.publicShowcase : resolvedStoreApps
+            organizations = WorkspaceOrganization.using(recentApps)
+            syncError = nil
+            hasLoadedRemoteState = true
+        } catch {
+            syncError = error.localizedDescription
+            hasLoadedRemoteState = false
+        }
+    }
+
+    private func insertOrReplace(_ app: MicroApp) {
+        recentApps.removeAll { $0.id == app.id || $0.name == app.name }
+        recentApps.insert(app, at: 0)
+
+        if app.visibility == .publicApp {
+            publicApps.removeAll { $0.id == app.id || $0.name == app.name }
+            publicApps.insert(app, at: 0)
+        }
+
+        organizations = WorkspaceOrganization.using(recentApps)
     }
 
     private func inferredAudience(for visibility: AppVisibility) -> BuildAudience {

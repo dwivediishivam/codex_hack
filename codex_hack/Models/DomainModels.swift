@@ -238,6 +238,10 @@ extension MicroApp {
     ]
 
     static let publicShowcase: [MicroApp] = sampleData.filter { $0.visibility == .publicApp }
+
+    static func template(named name: String) -> MicroApp? {
+        sampleData.first { $0.name.caseInsensitiveCompare(name) == .orderedSame }
+    }
 }
 
 extension WorkspaceOrganization {
@@ -257,4 +261,100 @@ extension WorkspaceOrganization {
             apps: [MicroApp.renewalRadar]
         )
     ]
+
+    static func using(_ apps: [MicroApp]) -> [WorkspaceOrganization] {
+        sampleData.map { organization in
+            let resolvedApps = organization.apps.compactMap { sample in
+                apps.first { $0.name == sample.name } ?? sample
+            }
+
+            return WorkspaceOrganization(
+                id: organization.id,
+                name: organization.name,
+                seatCount: organization.seatCount,
+                domain: organization.domain,
+                apps: resolvedApps
+            )
+        }
+    }
+}
+
+extension AppCategory {
+    init(apiValue: String) {
+        switch apiValue.lowercased() {
+        case "planner": self = .planner
+        case "finance": self = .finance
+        case "event": self = .event
+        case "dashboard": self = .dashboard
+        case "operations": self = .operations
+        default: self = .custom
+        }
+    }
+}
+
+extension AppVisibility {
+    init(apiValue: String) {
+        switch apiValue.lowercased() {
+        case "public": self = .publicApp
+        case "organization": self = .orgApp
+        default: self = .privateApp
+        }
+    }
+
+    var apiValue: String {
+        switch self {
+        case .privateApp: "private"
+        case .publicApp: "public"
+        case .orgApp: "organization"
+        }
+    }
+}
+
+extension BuildAudience {
+    init(apiValue: String) {
+        switch apiValue.lowercased() {
+        case "consumer": self = .consumers
+        case "ops", "operations": self = .operations
+        case "team": self = .team
+        default: self = .personal
+        }
+    }
+
+    var apiValue: String {
+        switch self {
+        case .personal: "personal"
+        case .consumers: "consumer"
+        case .operations: "operations"
+        case .team: "team"
+        }
+    }
+}
+
+extension GenerationMode {
+    var apiValue: String {
+        switch self {
+        case .sharedRuntime: "instant"
+        case .advancedCodegen: "advanced"
+        }
+    }
+}
+
+extension AppStatus {
+    init(apiValue: String) {
+        switch apiValue.lowercased() {
+        case "ready": self = .ready
+        case "reviewing": self = .reviewing
+        case "failed": self = .failed
+        default: self = .building
+        }
+    }
+
+    var progressValue: Double {
+        switch self {
+        case .ready: 1
+        case .reviewing: 0.84
+        case .building: 0.34
+        case .failed: 0.08
+        }
+    }
 }

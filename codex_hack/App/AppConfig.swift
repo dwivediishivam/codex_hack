@@ -9,4 +9,8 @@ enum AppConfig {
     static var hasAuthConfiguration: Bool {
         !supabaseURL.isEmpty && !supabaseAnonKey.isEmpty
     }
+
+    static var hasBackendConfiguration: Bool {
+        !backendBaseURL.isEmpty
+    }
 }

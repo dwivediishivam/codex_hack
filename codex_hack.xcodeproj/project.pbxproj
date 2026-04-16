@@ -265,8 +265,8 @@
 				DEVELOPMENT_TEAM = 994RXHZ382;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_BACKEND_BASE_URL = "";
-				INFOPLIST_KEY_CFBundleDisplayName = "Pocket Foundry";
+				INFOPLIST_KEY_BACKEND_BASE_URL = "http://localhost:8080";
+				INFOPLIST_KEY_CFBundleDisplayName = Foundry;
 				INFOPLIST_KEY_GOOGLE_CLIENT_ID = "";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				INFOPLIST_KEY_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhnd2N2bWtlcWFtbXNkYmxnZXpmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMTc3MzYsImV4cCI6MjA5MTg5MzczNn0.ZtrDeRwRo02GctrhZyjgl01IR-2dmfc5XeODvPY2dLg";
@@ -302,8 +302,8 @@
 				DEVELOPMENT_TEAM = 994RXHZ382;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_BACKEND_BASE_URL = "";
-				INFOPLIST_KEY_CFBundleDisplayName = "Pocket Foundry";
+				INFOPLIST_KEY_BACKEND_BASE_URL = "http://localhost:8080";
+				INFOPLIST_KEY_CFBundleDisplayName = Foundry;
 				INFOPLIST_KEY_GOOGLE_CLIENT_ID = "";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				INFOPLIST_KEY_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhnd2N2bWtlcWFtbXNkYmxnZXpmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMTc3MzYsImV4cCI6MjA5MTg5MzczNn0.ZtrDeRwRo02GctrhZyjgl01IR-2dmfc5XeODvPY2dLg";

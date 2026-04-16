@@ -23,18 +23,33 @@ struct DashboardView: View {
         GlassCard {
             VStack(alignment: .leading, spacing: 16) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Good evening, \(appModel.session.profile.name)")
-                        .font(.system(.largeTitle, design: .serif, weight: .semibold))
-                        .foregroundStyle(AppTheme.ink)
-                    Text("Keep private builds, public launches, and workspace tools in one calm place.")
-                        .font(.subheadline)
-                        .foregroundStyle(AppTheme.slate)
+                    HStack(alignment: .center, spacing: 14) {
+                        Image("BrandMark")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 46, height: 46)
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Good evening, \(appModel.session.profile.name)")
+                                .font(.system(.largeTitle, design: .serif, weight: .semibold))
+                                .foregroundStyle(AppTheme.ink)
+                            Text("Keep private builds, public launches, and workspace tools in one calm place.")
+                                .font(.subheadline)
+                                .foregroundStyle(AppTheme.slate)
+                        }
+                    }
                 }
 
                 HStack(spacing: 10) {
                     MetricPill(label: "Ready", value: "\(appModel.readyApps.count)")
                     MetricPill(label: "Building", value: "\(appModel.buildingApps.count)")
                     MetricPill(label: "Store", value: "\(appModel.publicApps.count)")
+                }
+
+                if let syncError = appModel.syncError {
+                    Text(syncError)
+                        .font(.footnote)
+                        .foregroundStyle(AppTheme.warning)
                 }
             }
         }

@@ -6,6 +6,7 @@ import { createApp, createJob, listApps, listJobs, listPublicApps } from "../ser
 export const microAppsRouter = Router();
 
 const createSchema = z.object({
+  name: z.string().min(2).optional(),
   prompt: z.string().min(12),
   visibility: z.enum(["private", "public", "organization"]),
   audience: z.string().min(2),
@@ -63,7 +64,7 @@ microAppsRouter.post("/", (req, res) => {
       const promptPackage = compilePrompt(parsed.data);
       const app = await createApp({
         ownerId: parsed.data.ownerId,
-        name: parsed.data.prompt.split(" ").slice(0, 3).join(" "),
+        name: parsed.data.name?.trim() || suggestName(parsed.data.prompt),
         summary: parsed.data.prompt,
         visibility: parsed.data.visibility,
         audience: parsed.data.audience,
@@ -88,3 +89,50 @@ microAppsRouter.post("/", (req, res) => {
     }
   })();
 });
+
+function suggestName(prompt: string) {
+  const stopWords = new Set([
+    "make",
+    "build",
+    "create",
+    "me",
+    "my",
+    "i",
+    "want",
+    "need",
+    "needful",
+    "to",
+    "into",
+    "before",
+    "after",
+    "this",
+    "it",
+    "any",
+    "one",
+    "a",
+    "an",
+    "the",
+    "app",
+    "small",
+    "tiny",
+    "that",
+    "shows",
+    "for",
+    "with",
+    "our",
+    "that",
+    "should",
+    "can",
+    "would"
+  ]);
+
+  const tokens = prompt
+    .replace(/[^a-zA-Z0-9 ]/g, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .filter((token) => !stopWords.has(token.toLowerCase()))
+    .slice(0, 3)
+    .map((token) => token[0].toUpperCase() + token.slice(1).toLowerCase());
+
+  return tokens.join(" ") || "New App";
+}
