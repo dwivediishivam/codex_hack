@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		D1A0AA000000000000000001 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = D1A0AA000000000000000003 /* Supabase */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		C8EF26E52F90C7AE00CE2C65 /* codex_hack.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = codex_hack.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +27,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D1A0AA000000000000000001 /* Supabase in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +70,7 @@
 			);
 			name = codex_hack;
 			packageProductDependencies = (
+				D1A0AA000000000000000003 /* Supabase */,
 			);
 			productName = codex_hack;
 			productReference = C8EF26E52F90C7AE00CE2C65 /* codex_hack.app */;
@@ -94,6 +100,9 @@
 			);
 			mainGroup = C8EF26DC2F90C7AD00CE2C65;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				D1A0AA000000000000000002 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C8EF26E62F90C7AE00CE2C65 /* Products */;
 			projectDirPath = "";
@@ -256,6 +265,10 @@
 				DEVELOPMENT_TEAM = 994RXHZ382;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_BACKEND_BASE_URL = "";
+				INFOPLIST_KEY_GOOGLE_CLIENT_ID = "";
+				INFOPLIST_KEY_SUPABASE_ANON_KEY = sb_publishable_RoWQVypfXjiQrYkS1nHAxQ_mC0dWvs3;
+				INFOPLIST_KEY_SUPABASE_URL = "https://hgwcvmkeqammsdblgezf.supabase.co";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -288,6 +301,10 @@
 				DEVELOPMENT_TEAM = 994RXHZ382;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_BACKEND_BASE_URL = "";
+				INFOPLIST_KEY_GOOGLE_CLIENT_ID = "";
+				INFOPLIST_KEY_SUPABASE_ANON_KEY = sb_publishable_RoWQVypfXjiQrYkS1nHAxQ_mC0dWvs3;
+				INFOPLIST_KEY_SUPABASE_URL = "https://hgwcvmkeqammsdblgezf.supabase.co";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -332,6 +349,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		D1A0AA000000000000000002 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.39.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		D1A0AA000000000000000003 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D1A0AA000000000000000002 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = C8EF26DD2F90C7AD00CE2C65 /* Project object */;
 }
