@@ -6,15 +6,15 @@ struct CreateAppView: View {
     var body: some View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 18) {
                     promptComposer
-                    visibilityPanel
-                    systemPromptPanel
+                    launchPanel
+                    starterIdeas
                 }
                 .padding(20)
             }
-            .background(AppTheme.background.ignoresSafeArea())
-            .navigationTitle("Create")
+            .background(ShellBackground())
+            .navigationTitle("Build")
         }
     }
 
@@ -22,87 +22,122 @@ struct CreateAppView: View {
         GlassCard {
             SectionTitle(
                 eyebrow: "Prompt",
-                title: "Describe the micro app you want live",
-                subtitle: "The generator will evaluate feasibility, choose the right template mode, and prepare a deployment-ready app."
+                title: "Describe one job the app should do well",
+                subtitle: "Keep the scope narrow. Foundry works best when the app has one main task and a clear audience."
             )
 
             TextEditor(text: $appModel.createPrompt)
-                .frame(minHeight: 180)
+                .frame(minHeight: 160)
                 .padding(12)
                 .scrollContentBackground(.hidden)
-                .background(Color.white.opacity(0.72), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                .background(AppTheme.cardMuted, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
 
-            HStack {
-                ForEach(AppCategory.allCases) { category in
-                    Button {
-                        appModel.draftCategory = category
-                    } label: {
-                        TagChip(title: category.rawValue, isSelected: appModel.draftCategory == category)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .font(.caption)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .scrollClipDisabled()
-
-            Button("Generate Micro App") {
+            Button("Start Build") {
                 appModel.submitDraft()
             }
             .buttonStyle(CTAButtonStyle())
         }
     }
 
-    private var visibilityPanel: some View {
+    private var launchPanel: some View {
         GlassCard {
             SectionTitle(
-                eyebrow: "Scope",
-                title: "Choose launch mode and audience",
-                subtitle: "Private apps launch immediately, public apps enter review, org apps route into workspace governance."
+                eyebrow: "Launch",
+                title: "Choose where the app should live",
+                subtitle: "Private apps launch to your account, public apps enter review, and team apps stay inside one workspace."
             )
 
             VStack(alignment: .leading, spacing: 14) {
-                Picker("Visibility", selection: $appModel.draftVisibility) {
-                    ForEach(AppVisibility.allCases) { visibility in
-                        Text(visibility.rawValue).tag(visibility)
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Visibility")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(AppTheme.slate)
+
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(AppVisibility.allCases) { visibility in
+                                Button {
+                                    appModel.setDraftVisibility(visibility)
+                                } label: {
+                                    TagChip(title: visibility.rawValue, isSelected: appModel.draftVisibility == visibility)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
                     }
                 }
-                .pickerStyle(.segmented)
 
                 Text(appModel.draftVisibility.description)
                     .font(.footnote)
                     .foregroundStyle(AppTheme.slate)
 
-                Picker("Audience", selection: $appModel.draftAudience) {
-                    ForEach(BuildAudience.allCases) { audience in
-                        Text(audience.rawValue).tag(audience)
-                    }
-                }
-                .pickerStyle(.segmented)
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Category")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(AppTheme.slate)
 
-                Picker("Generation Mode", selection: $appModel.generationMode) {
-                    ForEach(GenerationMode.allCases) { mode in
-                        Text(mode.rawValue).tag(mode)
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(AppCategory.allCases) { category in
+                                Button {
+                                    appModel.draftCategory = category
+                                } label: {
+                                    TagChip(title: category.rawValue, isSelected: appModel.draftCategory == category)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
                     }
                 }
-                .pickerStyle(.segmented)
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Build mode")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(AppTheme.slate)
+
+                    HStack(spacing: 8) {
+                        ForEach(GenerationMode.allCases) { mode in
+                            Button {
+                                appModel.generationMode = mode
+                            } label: {
+                                TagChip(title: mode.rawValue, isSelected: appModel.generationMode == mode)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
             }
         }
     }
 
-    private var systemPromptPanel: some View {
+    private var starterIdeas: some View {
         GlassCard {
             SectionTitle(
-                eyebrow: "Generation Contract",
-                title: "Fixed system prompt paired with the user prompt",
-                subtitle: "This is the quality bar that should travel into the backend generation worker."
+                eyebrow: "Starters",
+                title: "Use one of the sample prompts",
+                subtitle: "These map directly to the four sample apps in the dashboard and store."
             )
 
-            Text(GenerationPromptTemplate.systemPrompt)
-                .font(.footnote.monospaced())
-                .foregroundStyle(AppTheme.ink)
-                .padding(14)
-                .background(Color.white.opacity(0.7), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            VStack(spacing: 10) {
+                ForEach(appModel.starterPrompts, id: \.self) { prompt in
+                    Button {
+                        appModel.createPrompt = prompt
+                    } label: {
+                        HStack(alignment: .top) {
+                            Text(prompt)
+                                .font(.subheadline)
+                                .foregroundStyle(AppTheme.ink)
+                                .multilineTextAlignment(.leading)
+                            Spacer()
+                            Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                .foregroundStyle(AppTheme.slate)
+                        }
+                        .padding(14)
+                        .background(AppTheme.cardMuted, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
         }
     }
 }

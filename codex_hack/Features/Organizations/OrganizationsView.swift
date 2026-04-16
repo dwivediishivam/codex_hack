@@ -9,9 +9,9 @@ struct OrganizationsView: View {
                 VStack(alignment: .leading, spacing: 18) {
                     GlassCard {
                         SectionTitle(
-                            eyebrow: "Organizations",
-                            title: "Shared workspaces with governed app access",
-                            subtitle: "Org apps are built with the same prompt pipeline, but route through team ownership, approvals, and shared visibility."
+                            eyebrow: "Workspaces",
+                            title: "Shared tools with a single owner trail",
+                            subtitle: "Team apps keep one live URL, shared access, and prompt-based version notes."
                         )
                     }
 
@@ -21,7 +21,7 @@ struct OrganizationsView: View {
                                 HStack {
                                     VStack(alignment: .leading, spacing: 6) {
                                         Text(organization.name)
-                                            .font(.headline.weight(.bold))
+                                            .font(.headline)
                                             .foregroundStyle(AppTheme.ink)
                                         Text(organization.domain)
                                             .font(.subheadline)
@@ -35,7 +35,7 @@ struct OrganizationsView: View {
                                     Button {
                                         appModel.selectedApp = app
                                     } label: {
-                                        HStack {
+                                        HStack(alignment: .top) {
                                             VStack(alignment: .leading, spacing: 4) {
                                                 Text(app.name)
                                                     .font(.subheadline.weight(.semibold))
@@ -45,9 +45,7 @@ struct OrganizationsView: View {
                                                     .foregroundStyle(AppTheme.slate)
                                             }
                                             Spacer()
-                                            Text(app.status.badgeText)
-                                                .font(.caption.weight(.semibold))
-                                                .foregroundStyle(AppTheme.ink)
+                                            TagChip(title: app.status.badgeText, isSelected: true)
                                         }
                                     }
                                     .buttonStyle(.plain)
@@ -58,8 +56,8 @@ struct OrganizationsView: View {
                 }
                 .padding(20)
             }
-            .background(AppTheme.background.ignoresSafeArea())
-            .navigationTitle("Workspaces")
+            .background(ShellBackground())
+            .navigationTitle("Teams")
         }
     }
 }

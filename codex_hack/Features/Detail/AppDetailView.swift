@@ -17,7 +17,7 @@ struct AppDetailView: View {
                 }
                 .padding(20)
             }
-            .background(AppTheme.background.ignoresSafeArea())
+            .background(ShellBackground())
             .navigationTitle(app.name)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -35,7 +35,7 @@ struct AppDetailView: View {
     private var hero: some View {
         GlassCard {
             Text(app.tagline)
-                .font(.system(.title2, design: .rounded, weight: .bold))
+                .font(.system(.title2, design: .serif, weight: .semibold))
                 .foregroundStyle(AppTheme.ink)
             Text(app.summary)
                 .font(.subheadline)
@@ -45,15 +45,18 @@ struct AppDetailView: View {
                 TagChip(title: app.category.rawValue)
                 TagChip(title: app.status.badgeText, isSelected: true)
             }
+            Text(app.storeNote)
+                .font(.footnote)
+                .foregroundStyle(AppTheme.slate)
         }
     }
 
     private var metrics: some View {
         GlassCard {
             SectionTitle(
-                eyebrow: "Performance",
+                eyebrow: "Snapshot",
                 title: "Usage and release posture",
-                subtitle: "Basic app metrics and launch state."
+                subtitle: "A compact view of traction, launch mode, and last edit activity."
             )
 
             HStack(spacing: 12) {
@@ -61,15 +64,19 @@ struct AppDetailView: View {
                 MetricPill(label: "Saves", value: "\(app.metrics.favorites)")
                 MetricPill(label: "Forks", value: "\(app.metrics.forks)")
             }
+
+            Text("Last edited \(app.lastEdited.formatted(date: .abbreviated, time: .shortened))")
+                .font(.footnote)
+                .foregroundStyle(AppTheme.slate)
         }
     }
 
     private var updates: some View {
         GlassCard {
             SectionTitle(
-                eyebrow: "Changes",
-                title: "Version and deployment notes",
-                subtitle: "Prompt-led updates should generate visible release summaries."
+                eyebrow: "Release Notes",
+                title: "What changed",
+                subtitle: "Prompt-based edits should always resolve into readable version notes."
             )
 
             ForEach(app.updates) { update in
@@ -90,18 +97,18 @@ struct AppDetailView: View {
     private var editPanel: some View {
         GlassCard {
             SectionTitle(
-                eyebrow: "Edit By Prompt",
+                eyebrow: "Edit",
                 title: "Describe the next version",
-                subtitle: "This should create a new versioned job in the backend, not overwrite production blindly."
+                subtitle: "This should create a new versioned job rather than silently replacing production."
             )
 
             TextEditor(text: $editPrompt)
                 .frame(minHeight: 120)
                 .padding(12)
                 .scrollContentBackground(.hidden)
-                .background(Color.white.opacity(0.7), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .background(AppTheme.cardMuted, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
 
-            Button("Queue Prompt Update") {
+            Button("Queue Update") {
                 appModel.createPrompt = "Update \(app.name): \(editPrompt)"
                 appModel.selectedApp = nil
                 appModel.selectedTab = .create

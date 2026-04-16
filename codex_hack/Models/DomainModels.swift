@@ -1,5 +1,11 @@
 import Foundation
 
+enum StudioBrand {
+    static let name = "Foundry"
+    static let tag = "Micro apps, made to fit."
+    static let summary = "Create private tools, public utilities, and workspace apps from a single prompt."
+}
+
 struct UserSession {
     var isAuthenticated: Bool
     var profile: UserProfile
@@ -10,8 +16,8 @@ struct UserSession {
         profile: UserProfile(
             name: "Shivam",
             email: "shivam@example.com",
-            role: "Builder",
-            organizationCount: 3
+            role: "Owner",
+            organizationCount: 2
         ),
         accessToken: nil
     )
@@ -27,30 +33,31 @@ struct UserProfile {
 enum AppVisibility: String, CaseIterable, Identifiable {
     case privateApp = "Private"
     case publicApp = "Public"
-    case orgApp = "Organization"
+    case orgApp = "Org"
 
     var id: String { rawValue }
+
     var description: String {
         switch self {
-        case .privateApp: "Visible only to you."
-        case .publicApp: "Discoverable in the app gallery."
-        case .orgApp: "Shared inside an organization workspace."
+        case .privateApp: "Only you can open it."
+        case .publicApp: "Listed in the public store."
+        case .orgApp: "Shared inside one workspace."
         }
     }
 }
 
 enum BuildAudience: String, CaseIterable, Identifiable {
     case personal = "Personal"
-    case consumers = "Consumers"
-    case operations = "Operations"
+    case consumers = "Consumer"
+    case operations = "Ops"
     case team = "Team"
 
     var id: String { rawValue }
 }
 
 enum GenerationMode: String, CaseIterable, Identifiable {
-    case sharedRuntime = "Instant Runtime"
-    case advancedCodegen = "Advanced Codegen"
+    case sharedRuntime = "Instant"
+    case advancedCodegen = "Advanced"
 
     var id: String { rawValue }
 }
@@ -58,7 +65,7 @@ enum GenerationMode: String, CaseIterable, Identifiable {
 enum AppStatus: String {
     case building = "Building"
     case ready = "Ready"
-    case reviewing = "Reviewing"
+    case reviewing = "In Review"
     case failed = "Needs Fix"
 
     var badgeText: String { rawValue }
@@ -76,21 +83,21 @@ enum AppCategory: String, CaseIterable, Identifiable {
 
     var defaultTagline: String {
         switch self {
-        case .planner: "A focused utility for routines, reminders, and personal planning."
-        case .finance: "A compact financial assistant with clear numbers and actions."
-        case .event: "A lightweight event companion with role-aware task flows."
-        case .dashboard: "A visual control room for high-signal updates."
-        case .operations: "An internal tool for workflows, approvals, and team actions."
-        case .custom: "A bespoke micro app generated from your prompt."
+        case .planner: "A compact planner with one clear job."
+        case .finance: "A quiet financial tool with useful defaults."
+        case .event: "A small event app built for the day that matters."
+        case .dashboard: "A focused view of the numbers worth checking."
+        case .operations: "A lightweight operations tool with simple rules."
+        case .custom: "A custom app shaped around your exact prompt."
         }
     }
 
     func suggestedName(from prompt: String) -> String {
         let tokens = prompt
             .split(whereSeparator: { $0 == " " || $0 == "," || $0 == "." })
-            .prefix(3)
+            .prefix(2)
             .map { $0.capitalized }
-        return tokens.isEmpty ? "New \(rawValue) App" : tokens.joined(separator: " ")
+        return tokens.isEmpty ? "New App" : tokens.joined(separator: " ")
     }
 }
 
@@ -112,6 +119,8 @@ struct MicroApp: Identifiable {
     let name: String
     let tagline: String
     let summary: String
+    let storeNote: String
+    let samplePrompt: String
     let category: AppCategory
     let visibility: AppVisibility
     let audience: BuildAudience
@@ -141,93 +150,94 @@ struct GenerationPromptPackage {
 }
 
 extension MicroApp {
+    static let spendHours = MicroApp(
+        id: UUID(),
+        name: "Spend Hours",
+        tagline: "See what a purchase costs in working hours.",
+        summary: "Turn any item into hours of work, compare impulse buys against planned spending, and keep a calmer view of what something really costs.",
+        storeNote: "A strong public utility because the concept is universal and easy to understand in seconds.",
+        samplePrompt: "Make me a small app that shows how many work hours I need for any purchase before I spend.",
+        category: .finance,
+        visibility: .publicApp,
+        audience: .consumers,
+        status: .ready,
+        completion: 1,
+        deploymentURL: URL(string: "https://codex-hack-web.vercel.app"),
+        lastEdited: .now.addingTimeInterval(-4200),
+        metrics: .init(runs: 942, favorites: 312, forks: 74),
+        updates: [
+            AppUpdate(title: "Wage presets", message: "Supports hourly, monthly, and freelance income inputs.", timestamp: .now.addingTimeInterval(-9200))
+        ]
+    )
+
+    static let guestDesk = MicroApp(
+        id: UUID(),
+        name: "Guest Desk",
+        tagline: "A simple arrival board for small events.",
+        summary: "Check guests in, mark VIP notes, track capacity, and keep one calm screen for the people at the door.",
+        storeNote: "A useful public template for campus events, pop-ups, launches, and private gatherings.",
+        samplePrompt: "Build a tiny event check-in app with guest status, VIP notes, and a live capacity count.",
+        category: .event,
+        visibility: .publicApp,
+        audience: .operations,
+        status: .ready,
+        completion: 1,
+        deploymentURL: URL(string: "https://codex-hack-web.vercel.app"),
+        lastEdited: .now.addingTimeInterval(-12800),
+        metrics: .init(runs: 508, favorites: 196, forks: 43),
+        updates: [
+            AppUpdate(title: "Offline list cache", message: "Guest names stay searchable even when the signal gets poor.", timestamp: .now.addingTimeInterval(-14400))
+        ]
+    )
+
+    static let renewalRadar = MicroApp(
+        id: UUID(),
+        name: "Renewal Radar",
+        tagline: "Track renewals, owners, and stop-or-keep calls.",
+        summary: "A shared operations app for software renewals with owners, renewal dates, usage notes, and a clear keep or cancel decision.",
+        storeNote: "Best used as an organization app where finance and ops need the same source of truth.",
+        samplePrompt: "Create a renewal tracker for our team with owners, decision dates, and a keep or cancel note.",
+        category: .operations,
+        visibility: .orgApp,
+        audience: .team,
+        status: .reviewing,
+        completion: 0.84,
+        deploymentURL: URL(string: "https://codex-hack-web.vercel.app"),
+        lastEdited: .now.addingTimeInterval(-6200),
+        metrics: .init(runs: 68, favorites: 21, forks: 6),
+        updates: [
+            AppUpdate(title: "Workspace review", message: "Waiting for one final pass before it is shared across the org.", timestamp: .now.addingTimeInterval(-2100))
+        ]
+    )
+
+    static let briefDeck = MicroApp(
+        id: UUID(),
+        name: "Brief Deck",
+        tagline: "One quiet screen for the day ahead.",
+        summary: "Capture today’s priorities, blockers, key timings, and decisions for a small team, event crew, or project room.",
+        storeNote: "A good private default because each team’s brief is personal but the format stays broadly useful.",
+        samplePrompt: "Make a daily brief app with priorities, blockers, schedule, and decision log for a small team.",
+        category: .planner,
+        visibility: .privateApp,
+        audience: .personal,
+        status: .building,
+        completion: 0.41,
+        deploymentURL: URL(string: "https://codex-hack-web.vercel.app"),
+        lastEdited: .now.addingTimeInterval(-3400),
+        metrics: .init(runs: 14, favorites: 4, forks: 1),
+        updates: [
+            AppUpdate(title: "Layout draft ready", message: "The first version has the core cards, note model, and quick capture flow.", timestamp: .now.addingTimeInterval(-1600))
+        ]
+    )
+
     static let sampleData: [MicroApp] = [
-        MicroApp(
-            id: UUID(),
-            name: "Spend Hours",
-            tagline: "Convert purchases into work-hours before you commit.",
-            summary: "An app that calculates how many work hours are needed for a purchase, compares essential vs impulse spending, and keeps a running regret score.",
-            category: .finance,
-            visibility: .privateApp,
-            audience: .personal,
-            status: .ready,
-            completion: 1,
-            deploymentURL: URL(string: "https://example.vercel.app/spend-hours"),
-            lastEdited: .now.addingTimeInterval(-7200),
-            metrics: .init(runs: 124, favorites: 22, forks: 5),
-            updates: [
-                AppUpdate(title: "Added regret heatmap", message: "Weekly visual shows where discretionary purchases cluster.", timestamp: .now.addingTimeInterval(-3600)),
-                AppUpdate(title: "Salary presets", message: "Supports hourly, monthly, and gig-based income models.", timestamp: .now.addingTimeInterval(-86000))
-            ]
-        ),
-        MicroApp(
-            id: UUID(),
-            name: "Event Pulse",
-            tagline: "Run event-day logistics with one clean command center.",
-            summary: "Create roles, track task ownership, manage checklists, and share public event links with attendees.",
-            category: .event,
-            visibility: .orgApp,
-            audience: .operations,
-            status: .reviewing,
-            completion: 0.74,
-            deploymentURL: URL(string: "https://example.vercel.app/event-pulse"),
-            lastEdited: .now.addingTimeInterval(-14400),
-            metrics: .init(runs: 57, favorites: 14, forks: 2),
-            updates: [
-                AppUpdate(title: "Ops review waiting", message: "Push request sent to the org workspace reviewer queue.", timestamp: .now.addingTimeInterval(-1800))
-            ]
-        ),
-        MicroApp(
-            id: UUID(),
-            name: "Renewal Radar",
-            tagline: "Track software renewals and force a value check before spend.",
-            summary: "A private app that lists renewals, estimated monthly value, owner, and a red-flag score for underused tools.",
-            category: .operations,
-            visibility: .privateApp,
-            audience: .team,
-            status: .building,
-            completion: 0.42,
-            deploymentURL: URL(string: "https://example.vercel.app/renewal-radar"),
-            lastEdited: .now.addingTimeInterval(-5400),
-            metrics: .init(runs: 9, favorites: 3, forks: 1),
-            updates: [
-                AppUpdate(title: "Data schema ready", message: "Codex generated renewal entities, owner mapping, and alert rules.", timestamp: .now.addingTimeInterval(-2600))
-            ]
-        )
+        spendHours,
+        guestDesk,
+        renewalRadar,
+        briefDeck
     ]
 
-    static let publicShowcase: [MicroApp] = [
-        MicroApp(
-            id: UUID(),
-            name: "Trip Splitter",
-            tagline: "A better shared-cost tracker for small groups.",
-            summary: "Track contributions, reimbursements, and shared expenses with instant net settlement views.",
-            category: .planner,
-            visibility: .publicApp,
-            audience: .consumers,
-            status: .ready,
-            completion: 1,
-            deploymentURL: URL(string: "https://example.vercel.app/trip-splitter"),
-            lastEdited: .now.addingTimeInterval(-120000),
-            metrics: .init(runs: 812, favorites: 209, forks: 51),
-            updates: []
-        ),
-        MicroApp(
-            id: UUID(),
-            name: "Campus Sprint",
-            tagline: "Run student events with clear staffing and live status boards.",
-            summary: "For college teams handling volunteers, sessions, venue checks, and day-of task management.",
-            category: .event,
-            visibility: .publicApp,
-            audience: .operations,
-            status: .ready,
-            completion: 1,
-            deploymentURL: URL(string: "https://example.vercel.app/campus-sprint"),
-            lastEdited: .now.addingTimeInterval(-420000),
-            metrics: .init(runs: 1240, favorites: 488, forks: 90),
-            updates: []
-        )
-    ]
+    static let publicShowcase: [MicroApp] = sampleData.filter { $0.visibility == .publicApp }
 }
 
 extension WorkspaceOrganization {
@@ -237,14 +247,14 @@ extension WorkspaceOrganization {
             name: "Northstar Events",
             seatCount: 18,
             domain: "northstar.events",
-            apps: Array(MicroApp.sampleData.prefix(2))
+            apps: [MicroApp.guestDesk]
         ),
         WorkspaceOrganization(
             id: UUID(),
-            name: "Tidal Ops",
-            seatCount: 34,
-            domain: "tidal.so",
-            apps: [MicroApp.sampleData[2]]
+            name: "Atlas Ops",
+            seatCount: 26,
+            domain: "atlasops.io",
+            apps: [MicroApp.renewalRadar]
         )
     ]
 }

@@ -12,7 +12,6 @@ final class AppModel: ObservableObject {
     @Published var isAuthenticating = false
     @Published var selectedTab: MainTab = .dashboard
     @Published var selectedApp: MicroApp?
-    @Published var selectedOrganization: WorkspaceOrganization?
     @Published var createPrompt = ""
     @Published var draftVisibility: AppVisibility = .privateApp
     @Published var draftAudience: BuildAudience = .personal
@@ -23,11 +22,39 @@ final class AppModel: ObservableObject {
     @Published var organizations = WorkspaceOrganization.sampleData
 
     var featuredApps: [MicroApp] {
-        recentApps.filter { $0.status != .failed }.prefix(3).map { $0 }
+        recentApps
+            .sorted { $0.metrics.favorites > $1.metrics.favorites }
+            .prefix(3)
+            .map { $0 }
     }
 
-    var activeApps: [MicroApp] {
-        recentApps.filter { $0.status == .ready || $0.status == .building }
+    var privateApps: [MicroApp] {
+        recentApps.filter { $0.visibility == .privateApp }
+    }
+
+    var orgApps: [MicroApp] {
+        recentApps.filter { $0.visibility == .orgApp }
+    }
+
+    var buildingApps: [MicroApp] {
+        recentApps.filter { $0.status == .building || $0.status == .reviewing }
+    }
+
+    var readyApps: [MicroApp] {
+        recentApps.filter { $0.status == .ready }
+    }
+
+    var storeHighlights: [MicroApp] {
+        publicApps.sorted { $0.metrics.favorites > $1.metrics.favorites }
+    }
+
+    var starterPrompts: [String] {
+        [
+            MicroApp.spendHours.samplePrompt,
+            MicroApp.guestDesk.samplePrompt,
+            MicroApp.renewalRadar.samplePrompt,
+            MicroApp.briefDeck.samplePrompt
+        ]
     }
 
     var draftPromptPackage: GenerationPromptPackage {
@@ -72,6 +99,7 @@ final class AppModel: ObservableObject {
         Task {
             await AuthService.shared.signOut()
         }
+
         session = .preview
         session.isAuthenticated = false
         session.accessToken = nil
@@ -83,29 +111,41 @@ final class AppModel: ObservableObject {
         let trimmed = createPrompt.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
+        let visibility = draftVisibility
+        let category = draftCategory
+        let audience = inferredAudience(for: visibility)
         let app = MicroApp(
             id: UUID(),
-            name: draftCategory.suggestedName(from: trimmed),
-            tagline: draftCategory.defaultTagline,
+            name: category.suggestedName(from: trimmed),
+            tagline: draftLine(for: visibility, category: category),
             summary: trimmed,
-            category: draftCategory,
-            visibility: draftVisibility,
-            audience: draftAudience,
-            status: .building,
-            completion: 0.22,
+            storeNote: storeNote(for: visibility),
+            samplePrompt: trimmed,
+            category: category,
+            visibility: visibility,
+            audience: audience,
+            status: visibility == .publicApp ? .reviewing : .building,
+            completion: visibility == .publicApp ? 0.64 : 0.24,
             deploymentURL: URL(string: "https://example.vercel.app/apps/\(UUID().uuidString.lowercased())"),
             lastEdited: .now,
             metrics: .init(runs: 0, favorites: 0, forks: 0),
             updates: [
                 AppUpdate(
-                    title: "Generation queued",
-                    message: "Codex accepted the prompt and is creating the first version from the shared runtime template.",
+                    title: visibility == .publicApp ? "Submitted for review" : "Build started",
+                    message: visibility == .publicApp
+                        ? "Foundry prepared the first version and placed it in the public review lane."
+                        : "Foundry queued the first version using the instant runtime.",
                     timestamp: .now
                 )
             ]
         )
 
         recentApps.insert(app, at: 0)
+        if visibility == .publicApp {
+            publicApps.insert(app, at: 0)
+        }
+
+        draftAudience = audience
         createPrompt = ""
         selectedTab = .dashboard
         selectedApp = app
@@ -114,9 +154,47 @@ final class AppModel: ObservableObject {
     func requestPublicRemix(from app: MicroApp) {
         createPrompt = "Remix \(app.name): \(app.summary)"
         draftVisibility = .privateApp
-        draftAudience = .personal
+        draftAudience = inferredAudience(for: .privateApp)
         draftCategory = app.category
         selectedTab = .create
+    }
+
+    func setDraftVisibility(_ visibility: AppVisibility) {
+        draftVisibility = visibility
+        draftAudience = inferredAudience(for: visibility)
+    }
+
+    private func inferredAudience(for visibility: AppVisibility) -> BuildAudience {
+        switch visibility {
+        case .privateApp:
+            return .personal
+        case .publicApp:
+            return .consumers
+        case .orgApp:
+            return .team
+        }
+    }
+
+    private func draftLine(for visibility: AppVisibility, category: AppCategory) -> String {
+        switch visibility {
+        case .privateApp:
+            return "A private \(category.rawValue.lowercased()) tool shaped around one clear need."
+        case .publicApp:
+            return "A public \(category.rawValue.lowercased()) utility ready for the store."
+        case .orgApp:
+            return "A shared \(category.rawValue.lowercased()) app built for one workspace."
+        }
+    }
+
+    private func storeNote(for visibility: AppVisibility) -> String {
+        switch visibility {
+        case .privateApp:
+            return "Private builds stay in your account until you choose to publish or share."
+        case .publicApp:
+            return "Public apps enter the store only after a review pass and quality check."
+        case .orgApp:
+            return "Workspace apps inherit team visibility, version history, and ownership rules."
+        }
     }
 }
 
@@ -138,21 +216,31 @@ enum MainTab: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .dashboard: "Home"
-        case .create: "Create"
-        case .explore: "Store"
-        case .organizations: "Workspaces"
-        case .profile: "Profile"
+        case .dashboard:
+            return "Home"
+        case .create:
+            return "Build"
+        case .explore:
+            return "Store"
+        case .organizations:
+            return "Teams"
+        case .profile:
+            return "Account"
         }
     }
 
     var symbol: String {
         switch self {
-        case .dashboard: "square.grid.2x2.fill"
-        case .create: "sparkles.rectangle.stack.fill"
-        case .explore: "safari.fill"
-        case .organizations: "person.3.fill"
-        case .profile: "person.crop.circle.fill"
+        case .dashboard:
+            return "house.fill"
+        case .create:
+            return "plus.app.fill"
+        case .explore:
+            return "square.grid.2x2"
+        case .organizations:
+            return "person.2.fill"
+        case .profile:
+            return "circle.grid.2x1.fill"
         }
     }
 }

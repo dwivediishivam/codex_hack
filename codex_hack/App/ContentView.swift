@@ -11,7 +11,7 @@ struct ContentView: View {
                 AuthView()
             }
         }
-        .background(AppTheme.background.ignoresSafeArea())
+        .background(ShellBackground())
         .sheet(item: $appModel.selectedApp) { app in
             AppDetailView(app: app)
                 .environmentObject(appModel)

@@ -6,78 +6,46 @@ struct DashboardView: View {
     var body: some View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 18) {
                     header
-                    featuredCarousel
-                    activeGrid
-                    activityStream
+                    buildQueue
+                    storePreview
+                    workspacePreview
                 }
                 .padding(20)
             }
-            .background(AppTheme.background.ignoresSafeArea())
-            .navigationTitle("Workspace")
+            .background(ShellBackground())
+            .navigationTitle("Home")
         }
     }
 
     private var header: some View {
         GlassCard {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 8) {
                     Text("Good evening, \(appModel.session.profile.name)")
-                        .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                        .font(.system(.largeTitle, design: .serif, weight: .semibold))
                         .foregroundStyle(AppTheme.ink)
-                    Text("Your command center for private builds, org workflows, and public launches.")
+                    Text("Keep private builds, public launches, and workspace tools in one calm place.")
                         .font(.subheadline)
                         .foregroundStyle(AppTheme.slate)
                 }
-                Spacer()
-                VStack(alignment: .trailing, spacing: 8) {
-                    Text("\(appModel.activeApps.count)")
-                        .font(.system(size: 30, weight: .bold, design: .rounded))
-                        .foregroundStyle(AppTheme.ink)
-                    Text("active apps")
-                        .font(.caption)
-                        .foregroundStyle(AppTheme.slate)
-                }
-            }
 
-            HStack(spacing: 10) {
-                MetricPill(label: "Private", value: "\(appModel.recentApps.filter { $0.visibility == .privateApp }.count)")
-                MetricPill(label: "Org", value: "\(appModel.recentApps.filter { $0.visibility == .orgApp }.count)")
-                MetricPill(label: "Public", value: "\(appModel.publicApps.count)")
-            }
-        }
-    }
-
-    private var featuredCarousel: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionTitle(
-                eyebrow: "Featured",
-                title: "Keep your strongest apps in reach",
-                subtitle: "Apps with recent traction, current activity, or pending updates."
-            )
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 16) {
-                    ForEach(appModel.featuredApps, id: \.id) { app in
-                        Button {
-                            appModel.selectedApp = app
-                        } label: {
-                            FeaturedAppCard(app: app)
-                        }
-                        .buttonStyle(.plain)
-                    }
+                HStack(spacing: 10) {
+                    MetricPill(label: "Ready", value: "\(appModel.readyApps.count)")
+                    MetricPill(label: "Building", value: "\(appModel.buildingApps.count)")
+                    MetricPill(label: "Store", value: "\(appModel.publicApps.count)")
                 }
             }
         }
     }
 
-    private var activeGrid: some View {
+    private var buildQueue: some View {
         VStack(alignment: .leading, spacing: 12) {
             SectionTitle(
-                eyebrow: "Build Queue",
+                eyebrow: "Recent",
                 title: "Apps in motion",
-                subtitle: "Live generation status, review states, and release readiness."
+                subtitle: "The four starter apps show the three release modes clearly: private, public, and team."
             )
 
             ForEach(appModel.recentApps, id: \.id) { app in
@@ -88,9 +56,9 @@ struct DashboardView: View {
                         HStack(alignment: .top) {
                             VStack(alignment: .leading, spacing: 8) {
                                 Text(app.name)
-                                    .font(.headline.weight(.bold))
+                                    .font(.headline)
                                     .foregroundStyle(AppTheme.ink)
-                                Text(app.summary)
+                                Text(app.tagline)
                                     .font(.subheadline)
                                     .foregroundStyle(AppTheme.slate)
                                     .multilineTextAlignment(.leading)
@@ -100,22 +68,17 @@ struct DashboardView: View {
                                 }
                             }
                             Spacer()
-                            Text(app.status.badgeText)
-                                .font(.caption.weight(.bold))
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 7)
-                                .background(AppTheme.ink, in: Capsule())
+                            MetricPill(label: "Status", value: app.status.badgeText)
                         }
 
                         AppProgressBar(value: app.completion)
                         HStack {
-                            Text("Deployment progress")
+                            Text(app.storeNote)
                                 .font(.caption)
                                 .foregroundStyle(AppTheme.slate)
                             Spacer()
                             Text("\(Int(app.completion * 100))%")
-                                .font(.caption.weight(.bold))
+                                .font(.caption.weight(.semibold))
                                 .foregroundStyle(AppTheme.ink)
                         }
                     }
@@ -125,51 +88,87 @@ struct DashboardView: View {
         }
     }
 
-    private var activityStream: some View {
+    private var storePreview: some View {
         VStack(alignment: .leading, spacing: 12) {
             SectionTitle(
-                eyebrow: "Updates",
-                title: "Recent app activity",
-                subtitle: "Prompt edits, deployments, and review checkpoints."
+                eyebrow: "Store",
+                title: "Public apps with a clear reason to exist",
+                subtitle: "The store is curated. Public apps need a crisp use case, quick payoff, and a clean remix path."
             )
 
-            ForEach(appModel.recentApps.flatMap(\.updates).sorted { $0.timestamp > $1.timestamp }) { update in
-                GlassCard(padding: 18) {
-                    Text(update.title)
-                        .font(.headline.weight(.semibold))
-                        .foregroundStyle(AppTheme.ink)
-                    Text(update.message)
-                        .font(.subheadline)
-                        .foregroundStyle(AppTheme.slate)
-                    Text(update.timestamp.formatted(date: .abbreviated, time: .shortened))
-                        .font(.caption)
-                        .foregroundStyle(AppTheme.slate)
+            ForEach(appModel.storeHighlights.prefix(2), id: \.id) { app in
+                GlassCard {
+                    HStack(alignment: .top, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(app.name)
+                                .font(.headline)
+                                .foregroundStyle(AppTheme.ink)
+                            Text(app.summary)
+                                .font(.subheadline)
+                                .foregroundStyle(AppTheme.slate)
+                                .multilineTextAlignment(.leading)
+                        }
+                        Spacer()
+                        VStack(alignment: .trailing, spacing: 6) {
+                            Text("\(app.metrics.favorites)")
+                                .font(.system(.title3, design: .serif, weight: .semibold))
+                                .foregroundStyle(AppTheme.ink)
+                            Text("saves")
+                                .font(.caption)
+                                .foregroundStyle(AppTheme.slate)
+                        }
+                    }
                 }
             }
         }
     }
-}
 
-private struct FeaturedAppCard: View {
-    let app: MicroApp
+    private var workspacePreview: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            SectionTitle(
+                eyebrow: "Teams",
+                title: "Workspace apps stay governed",
+                subtitle: "Organization apps keep shared ownership, version notes, and a single live URL."
+            )
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text(app.name)
-                .font(.system(.title3, design: .rounded, weight: .bold))
-            Text(app.tagline)
-                .font(.subheadline)
-                .foregroundStyle(.white.opacity(0.84))
-                .multilineTextAlignment(.leading)
-            Spacer()
-            HStack {
-                MetricPill(label: "Runs", value: "\(app.metrics.runs)")
-                MetricPill(label: "Forks", value: "\(app.metrics.forks)")
+            ForEach(appModel.organizations) { organization in
+                GlassCard {
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(organization.name)
+                                    .font(.headline)
+                                    .foregroundStyle(AppTheme.ink)
+                                Text(organization.domain)
+                                    .font(.subheadline)
+                                    .foregroundStyle(AppTheme.slate)
+                            }
+                            Spacer()
+                            MetricPill(label: "Seats", value: "\(organization.seatCount)")
+                        }
+
+                        ForEach(organization.apps, id: \.id) { app in
+                            Button {
+                                appModel.selectedApp = app
+                            } label: {
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(app.name)
+                                            .font(.subheadline.weight(.semibold))
+                                            .foregroundStyle(AppTheme.ink)
+                                        Text(app.tagline)
+                                            .font(.caption)
+                                            .foregroundStyle(AppTheme.slate)
+                                    }
+                                    Spacer()
+                                    TagChip(title: app.status.badgeText, isSelected: true)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
             }
         }
-        .foregroundStyle(.white)
-        .padding(20)
-        .frame(width: 290, height: 220, alignment: .leading)
-        .background(AppTheme.heroGradient, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
     }
 }

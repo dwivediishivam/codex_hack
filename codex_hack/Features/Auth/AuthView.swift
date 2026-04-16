@@ -5,51 +5,44 @@ struct AuthView: View {
 
     var body: some View {
         ScrollView(showsIndicators: false) {
-            VStack(spacing: 22) {
+            VStack(spacing: 18) {
                 hero
                 authActions
-                trustPanel
+                sampleStrip
             }
             .padding(20)
         }
-        .background(AppTheme.background.ignoresSafeArea())
+        .background(ShellBackground())
     }
 
     private var hero: some View {
-        GlassCard(padding: 24) {
-            VStack(alignment: .leading, spacing: 18) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("CODEX HACK")
-                            .font(.caption.weight(.bold))
-                            .tracking(2)
-                            .foregroundStyle(Color.white.opacity(0.72))
-                        Text("Generate real micro apps inside one powerful shell.")
-                            .font(.system(size: 34, weight: .bold, design: .rounded))
-                            .foregroundStyle(.white)
-                        Text("Private tools, public utilities, and organization apps delivered as hosted experiences that can be updated by prompt.")
-                            .font(.subheadline)
-                            .foregroundStyle(.white.opacity(0.82))
-                    }
-                    Spacer(minLength: 0)
-                }
+        VStack(alignment: .leading, spacing: 16) {
+            Text(StudioBrand.name)
+                .font(.system(size: 44, weight: .semibold, design: .serif))
+                .foregroundStyle(AppTheme.ink)
+            Text(StudioBrand.tag)
+                .font(.headline)
+                .foregroundStyle(AppTheme.ink)
+            Text(StudioBrand.summary)
+                .font(.subheadline)
+                .foregroundStyle(AppTheme.slate)
 
-                HStack(spacing: 10) {
-                    MetricPill(label: "Instant builds", value: "60s")
-                    MetricPill(label: "App modes", value: "3")
-                    MetricPill(label: "Prompt edits", value: "Live")
-                }
+            HStack(spacing: 10) {
+                MetricPill(label: "Private", value: "Instant")
+                MetricPill(label: "Public", value: "Reviewed")
+                MetricPill(label: "Teams", value: "Shared")
             }
         }
-        .background(AppTheme.heroGradient, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.top, 8)
     }
 
     private var authActions: some View {
         GlassCard {
             SectionTitle(
                 eyebrow: "Access",
-                title: "Create a secure platform account",
-                subtitle: "Using Supabase Auth with email and password. Password hashing and credential storage are handled by Supabase Auth, not by the app client."
+                title: "Sign in to your workspace",
+                subtitle: "Email and password are handled by Supabase Auth. Private apps, public publishing, and team permissions all start here."
             )
 
             VStack(spacing: 12) {
@@ -64,12 +57,12 @@ struct AuthView: View {
                     .textInputAutocapitalization(.never)
                     .keyboardType(.emailAddress)
                     .padding(16)
-                    .background(Color.white.opacity(0.7), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .background(AppTheme.cardMuted, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
 
                 SecureField("Password", text: $appModel.authPassword)
                     .textInputAutocapitalization(.never)
                     .padding(16)
-                    .background(Color.white.opacity(0.7), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .background(AppTheme.cardMuted, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
 
                 if let authError = appModel.authError {
                     Text(authError)
@@ -78,44 +71,46 @@ struct AuthView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
-                Button(appModel.authMode == .signIn ? "Sign In" : "Create Account") {
+                Button(appModel.authMode == .signIn ? "Continue" : "Create Account") {
                     Task {
                         await appModel.authenticate()
                     }
                 }
                 .disabled(appModel.isAuthenticating)
-                .buttonStyle(CTAButtonStyle(prominent: false))
+                .buttonStyle(CTAButtonStyle())
             }
-
-            Text("This keeps login simple for the first version and works cleanly with private apps, public publishing permissions, and org workspaces later.")
-                .font(.footnote)
-                .foregroundStyle(AppTheme.slate)
         }
     }
 
-    private var trustPanel: some View {
+    private var sampleStrip: some View {
         GlassCard {
             SectionTitle(
-                eyebrow: "Platform",
-                title: "Everything generated under one governed account",
-                subtitle: "Auth, storage, app visibility, and deployment state stay centralized."
+                eyebrow: "Inside",
+                title: "Start from a real use case",
+                subtitle: "Foundry opens with a small, coherent set of example apps instead of filler."
             )
 
-            VStack(alignment: .leading, spacing: 14) {
-                authBullet("Private apps stay isolated per user and per app namespace.")
-                authBullet("Public apps can be listed in the store and remixed into private copies.")
-                authBullet("Organization apps inherit workspace visibility and approval flows.")
+            VStack(spacing: 12) {
+                ForEach(MicroApp.sampleData.prefix(3)) { app in
+                    HStack(alignment: .top, spacing: 12) {
+                        Circle()
+                            .fill(AppTheme.accentSoft)
+                            .frame(width: 10, height: 10)
+                            .padding(.top, 6)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(app.name)
+                                .font(.headline)
+                                .foregroundStyle(AppTheme.ink)
+                            Text(app.tagline)
+                                .font(.subheadline)
+                                .foregroundStyle(AppTheme.slate)
+                                .multilineTextAlignment(.leading)
+                        }
+                        Spacer()
+                        TagChip(title: app.visibility.rawValue)
+                    }
+                }
             }
-        }
-    }
-
-    private func authBullet(_ text: String) -> some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "checkmark.circle.fill")
-                .foregroundStyle(AppTheme.accent)
-            Text(text)
-                .font(.subheadline)
-                .foregroundStyle(AppTheme.ink)
         }
     }
 }

@@ -1,288 +1,465 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, ReactNode, useMemo, useState } from "react";
 
-const privateApps = [
+type Visibility = "Private" | "Public" | "Org";
+type Category = "Planner" | "Finance" | "Event" | "Operations";
+type Tab = "Home" | "Build" | "Store" | "Teams" | "Account";
+
+const sampleApps = [
   {
     name: "Spend Hours",
+    tagline: "See what a purchase costs in working hours.",
+    summary:
+      "Turn any item into hours of work, compare impulse buys against planned spending, and keep a calmer view of what something really costs.",
+    storeNote: "A strong public utility because the concept is universal and easy to understand in seconds.",
+    visibility: "Public" as Visibility,
+    category: "Finance" as Category,
     status: "Ready",
-    summary: "Convert purchases into work-hours before spending."
+    saves: 312,
+    runs: 942,
+    progress: 100,
+    samplePrompt:
+      "Make me a small app that shows how many work hours I need for any purchase before I spend."
+  },
+  {
+    name: "Guest Desk",
+    tagline: "A simple arrival board for small events.",
+    summary:
+      "Check guests in, mark VIP notes, track capacity, and keep one calm screen for the people at the door.",
+    storeNote: "A useful public template for campus events, pop-ups, launches, and private gatherings.",
+    visibility: "Public" as Visibility,
+    category: "Event" as Category,
+    status: "Ready",
+    saves: 196,
+    runs: 508,
+    progress: 100,
+    samplePrompt:
+      "Build a tiny event check-in app with guest status, VIP notes, and a live capacity count."
   },
   {
     name: "Renewal Radar",
-    status: "Building",
-    summary: "Track renewals, owners, and underused tools."
-  }
-];
-
-const publicApps = [
-  {
-    name: "Trip Splitter",
-    tagline: "A better shared-cost tracker for small groups.",
-    saves: 209
+    tagline: "Track renewals, owners, and stop-or-keep calls.",
+    summary:
+      "A shared operations app for software renewals with owners, renewal dates, usage notes, and a clear keep or cancel decision.",
+    storeNote: "Best used as an organization app where finance and ops need the same source of truth.",
+    visibility: "Org" as Visibility,
+    category: "Operations" as Category,
+    status: "In Review",
+    saves: 21,
+    runs: 68,
+    progress: 84,
+    samplePrompt:
+      "Create a renewal tracker for our team with owners, decision dates, and a keep or cancel note."
   },
   {
-    name: "Campus Sprint",
-    tagline: "Run student events with a clean mobile command board.",
-    saves: 488
+    name: "Brief Deck",
+    tagline: "One quiet screen for the day ahead.",
+    summary:
+      "Capture today’s priorities, blockers, key timings, and decisions for a small team, event crew, or project room.",
+    storeNote: "A good private default because each team’s brief is personal but the format stays broadly useful.",
+    visibility: "Private" as Visibility,
+    category: "Planner" as Category,
+    status: "Building",
+    saves: 4,
+    runs: 14,
+    progress: 41,
+    samplePrompt:
+      "Make a daily brief app with priorities, blockers, schedule, and decision log for a small team."
   }
 ];
 
+const organizations = [
+  {
+    name: "Northstar Events",
+    domain: "northstar.events",
+    seats: 18,
+    apps: ["Guest Desk"]
+  },
+  {
+    name: "Atlas Ops",
+    domain: "atlasops.io",
+    seats: 26,
+    apps: ["Renewal Radar"]
+  }
+];
+
+const tabs: Tab[] = ["Home", "Build", "Store", "Teams", "Account"];
+
 export default function HomePage() {
+  const [activeTab, setActiveTab] = useState<Tab>("Home");
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [prompt, setPrompt] = useState("");
-  const [message, setMessage] = useState("This web app mirrors the Swift shell and will share Supabase auth and backend APIs.");
+  const [prompt, setPrompt] = useState(sampleApps[0].samplePrompt);
+  const [visibility, setVisibility] = useState<Visibility>("Private");
+  const [category, setCategory] = useState<Category>("Planner");
+  const [mode, setMode] = useState<"Instant" | "Advanced">("Instant");
+  const [selectedCategory, setSelectedCategory] = useState<Category | "All">("All");
+  const [notice, setNotice] = useState("Foundry keeps the shell quiet: one prompt, one build lane, one clear destination.");
 
-  const metrics = useMemo(
-    () => [
-      { label: "Private apps", value: "12" },
-      { label: "Org spaces", value: "3" },
-      { label: "Prompt edits", value: "Live" }
-    ],
+  const publicApps = useMemo(
+    () => sampleApps.filter((app) => app.visibility === "Public"),
     []
   );
 
-  function onSubmit(event: FormEvent) {
+  const filteredStore = useMemo(() => {
+    if (selectedCategory === "All") {
+      return publicApps;
+    }
+
+    return publicApps.filter((app) => app.category === selectedCategory);
+  }, [publicApps, selectedCategory]);
+
+  function handleAuthSubmit(event: FormEvent) {
     event.preventDefault();
-    setMessage(`${authMode === "signin" ? "Sign in" : "Account creation"} will run through Supabase Auth. Prompt draft: ${prompt || "not provided yet"}`);
+    setNotice(
+      authMode === "signin"
+        ? `Sign in requested for ${email || "your account"}.`
+        : `Account creation requested for ${email || "your account"}.`
+    );
+    setActiveTab("Home");
+  }
+
+  function handleBuildSubmit(event: FormEvent) {
+    event.preventDefault();
+    setNotice(
+      `Build queued in ${mode.toLowerCase()} mode as a ${visibility.toLowerCase()} ${category.toLowerCase()} app.`
+    );
+    setActiveTab("Home");
   }
 
   return (
-    <main className="page-shell">
-      <section className="hero-card">
-        <div className="eyebrow">CODEX HACK</div>
-        <h1>One mobile-first shell for AI-generated micro apps.</h1>
-        <p>
-          Private tools, public utilities, and organization workspaces delivered through a single
-          governed platform.
-        </p>
-        <div className="metric-row">
-          {metrics.map((metric) => (
-            <div className="metric-pill" key={metric.label}>
-              <strong>{metric.value}</strong>
-              <span>{metric.label}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="stack">
-        <article className="glass-card">
-          <div className="section-eyebrow">Access</div>
-          <h2>Email and password auth</h2>
-          <p>Supabase Auth is the shared identity layer for the Swift app and this mobile web replica.</p>
-
-          <form className="auth-form" onSubmit={onSubmit}>
-            <div className="segmented">
-              <button type="button" data-active={authMode === "signin"} onClick={() => setAuthMode("signin")}>
-                Sign In
-              </button>
-              <button type="button" data-active={authMode === "signup"} onClick={() => setAuthMode("signup")}>
-                Create Account
-              </button>
-            </div>
-
-            <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" />
-            <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" type="password" />
-            <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Describe the micro app you want live..." />
-            <button className="primary-button" type="submit">
-              {authMode === "signin" ? "Continue" : "Create Account"}
-            </button>
-          </form>
-
-          <div className="helper-text">{message}</div>
-        </article>
-
-        <article className="glass-card dark-card">
-          <div className="section-eyebrow">Workspace</div>
-          <h2>Swift shell, mirrored for the web</h2>
-          <p>Status-first cards, compact summaries, and mobile scanability stay consistent across both clients.</p>
-          <div className="app-stack">
-            {privateApps.map((app) => (
-              <div className="mini-card" key={app.name}>
-                <div className="mini-header">
-                  <strong>{app.name}</strong>
-                  <span>{app.status}</span>
-                </div>
-                <p>{app.summary}</p>
-              </div>
-            ))}
+    <main className="shell">
+      <section className="phone-frame">
+        <header className="phone-header">
+          <div>
+            <div className="eyebrow">Foundry</div>
+            <h1>Micro apps, made to fit.</h1>
           </div>
-        </article>
-      </section>
+          <p>
+            Create private tools, public utilities, and workspace apps from a single prompt.
+          </p>
+        </header>
 
-      <section className="glass-card">
-        <div className="section-eyebrow">Public Store</div>
-        <h2>Public apps worth remixing</h2>
-        <div className="store-list">
-          {publicApps.map((app) => (
-            <div className="store-item" key={app.name}>
-              <div>
-                <strong>{app.name}</strong>
-                <p>{app.tagline}</p>
-              </div>
-              <span>{app.saves} saves</span>
-            </div>
+        <section className="notice-card">{notice}</section>
+
+        <section className="content-stack">
+          {activeTab === "Home" && (
+            <>
+              <section className="panel">
+                <div className="section-head">
+                  <span>Overview</span>
+                  <h2>One quiet shell for everything</h2>
+                  <p>Private builds, public store launches, and team apps all use the same structure.</p>
+                </div>
+                <div className="metric-row">
+                  <Metric label="Ready" value="2" />
+                  <Metric label="Building" value="2" />
+                  <Metric label="Store" value="2" />
+                </div>
+              </section>
+
+              <section className="section-block">
+                <div className="section-head">
+                  <span>Recent</span>
+                  <h2>Apps in motion</h2>
+                </div>
+                {sampleApps.map((app) => (
+                  <article className="panel app-card" key={app.name}>
+                    <div className="row top">
+                      <div>
+                        <h3>{app.name}</h3>
+                        <p>{app.tagline}</p>
+                      </div>
+                      <Metric label="Status" value={app.status} compact />
+                    </div>
+                    <div className="chip-row">
+                      <Chip>{app.visibility}</Chip>
+                      <Chip>{app.category}</Chip>
+                    </div>
+                    <div className="progress-track">
+                      <span style={{ width: `${app.progress}%` }} />
+                    </div>
+                    <div className="row meta">
+                      <small>{app.storeNote}</small>
+                      <strong>{app.progress}%</strong>
+                    </div>
+                  </article>
+                ))}
+              </section>
+
+              <section className="section-block">
+                <div className="section-head">
+                  <span>Store</span>
+                  <h2>Public apps worth remixing</h2>
+                </div>
+                {publicApps.map((app) => (
+                  <article className="panel" key={app.name}>
+                    <div className="row top">
+                      <div>
+                        <h3>{app.name}</h3>
+                        <p>{app.summary}</p>
+                      </div>
+                      <Metric label="Saves" value={String(app.saves)} compact />
+                    </div>
+                  </article>
+                ))}
+              </section>
+            </>
+          )}
+
+          {activeTab === "Build" && (
+            <>
+              <section className="panel">
+                <div className="section-head">
+                  <span>Build</span>
+                  <h2>Describe one job the app should do well</h2>
+                  <p>Foundry works best when the scope is narrow and immediately useful.</p>
+                </div>
+                <form className="form-stack" onSubmit={handleBuildSubmit}>
+                  <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} />
+
+                  <div className="option-group">
+                    <label>Visibility</label>
+                    <div className="chip-row">
+                      {(["Private", "Public", "Org"] as Visibility[]).map((item) => (
+                        <button
+                          type="button"
+                          key={item}
+                          className={`chip-button ${visibility === item ? "active" : ""}`}
+                          onClick={() => setVisibility(item)}
+                        >
+                          {item}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="option-group">
+                    <label>Category</label>
+                    <div className="chip-row">
+                      {(["Planner", "Finance", "Event", "Operations"] as Category[]).map((item) => (
+                        <button
+                          type="button"
+                          key={item}
+                          className={`chip-button ${category === item ? "active" : ""}`}
+                          onClick={() => setCategory(item)}
+                        >
+                          {item}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="option-group">
+                    <label>Build mode</label>
+                    <div className="chip-row">
+                      {(["Instant", "Advanced"] as const).map((item) => (
+                        <button
+                          type="button"
+                          key={item}
+                          className={`chip-button ${mode === item ? "active" : ""}`}
+                          onClick={() => setMode(item)}
+                        >
+                          {item}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button className="primary-button" type="submit">
+                    Start build
+                  </button>
+                </form>
+              </section>
+
+              <section className="panel">
+                <div className="section-head">
+                  <span>Starters</span>
+                  <h2>Use a sample prompt</h2>
+                </div>
+                <div className="starter-list">
+                  {sampleApps.map((app) => (
+                    <button className="starter-button" key={app.name} onClick={() => setPrompt(app.samplePrompt)}>
+                      <strong>{app.name}</strong>
+                      <span>{app.samplePrompt}</span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            </>
+          )}
+
+          {activeTab === "Store" && (
+            <>
+              <section className="panel">
+                <div className="section-head">
+                  <span>Public Store</span>
+                  <h2>A store for useful, legible apps</h2>
+                  <p>Public apps are small, clear, and easy to remix into a private or team copy.</p>
+                </div>
+                <div className="chip-row">
+                  {(["All", "Planner", "Finance", "Event", "Operations"] as const).map((item) => (
+                    <button
+                      type="button"
+                      key={item}
+                      className={`chip-button ${selectedCategory === item ? "active" : ""}`}
+                      onClick={() => setSelectedCategory(item)}
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              {filteredStore.map((app) => (
+                <article className="panel" key={app.name}>
+                  <div className="row top">
+                    <div>
+                      <h3>{app.name}</h3>
+                      <p>{app.tagline}</p>
+                    </div>
+                    <button className="secondary-button" onClick={() => setPrompt(`Remix ${app.name}: ${app.summary}`)}>
+                      Remix
+                    </button>
+                  </div>
+                  <div className="chip-row">
+                    <Chip>{app.category}</Chip>
+                    <Chip>{`${app.saves} saves`}</Chip>
+                  </div>
+                  <p className="body-copy">{app.summary}</p>
+                  <small>{app.storeNote}</small>
+                </article>
+              ))}
+            </>
+          )}
+
+          {activeTab === "Teams" && (
+            <>
+              <section className="panel">
+                <div className="section-head">
+                  <span>Workspaces</span>
+                  <h2>Shared tools with a single owner trail</h2>
+                  <p>Team apps keep one live URL, shared access, and prompt-based version notes.</p>
+                </div>
+              </section>
+
+              {organizations.map((org) => (
+                <article className="panel" key={org.name}>
+                  <div className="row top">
+                    <div>
+                      <h3>{org.name}</h3>
+                      <p>{org.domain}</p>
+                    </div>
+                    <Metric label="Seats" value={String(org.seats)} compact />
+                  </div>
+                  <div className="starter-list">
+                    {org.apps.map((appName) => (
+                      <div className="workspace-row" key={appName}>
+                        <strong>{appName}</strong>
+                        <Chip>Shared</Chip>
+                      </div>
+                    ))}
+                  </div>
+                </article>
+              ))}
+            </>
+          )}
+
+          {activeTab === "Account" && (
+            <>
+              <section className="panel">
+                <div className="section-head">
+                  <span>Account</span>
+                  <h2>Sign in to your workspace</h2>
+                  <p>Email and password are handled by Supabase Auth for this PoC.</p>
+                </div>
+
+                <form className="form-stack" onSubmit={handleAuthSubmit}>
+                  <div className="chip-row">
+                    <button
+                      type="button"
+                      className={`chip-button ${authMode === "signin" ? "active" : ""}`}
+                      onClick={() => setAuthMode("signin")}
+                    >
+                      Sign In
+                    </button>
+                    <button
+                      type="button"
+                      className={`chip-button ${authMode === "signup" ? "active" : ""}`}
+                      onClick={() => setAuthMode("signup")}
+                    >
+                      Create Account
+                    </button>
+                  </div>
+                  <input
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    placeholder="Email"
+                    type="email"
+                  />
+                  <input
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    placeholder="Password"
+                    type="password"
+                  />
+                  <button className="primary-button" type="submit">
+                    {authMode === "signin" ? "Continue" : "Create Account"}
+                  </button>
+                </form>
+              </section>
+
+              <section className="panel">
+                <div className="section-head">
+                  <span>Platform</span>
+                  <h2>Connection status</h2>
+                </div>
+                <div className="status-list">
+                  <StatusRow label="Supabase" value="Ready" />
+                  <StatusRow label="Backend API" value="Ready" />
+                  <StatusRow label="Email login" value="Ready" />
+                </div>
+              </section>
+            </>
+          )}
+        </section>
+
+        <nav className="bottom-nav" aria-label="Primary">
+          {tabs.map((tab) => (
+            <button
+              key={tab}
+              className={`nav-item ${activeTab === tab ? "active" : ""}`}
+              onClick={() => setActiveTab(tab)}
+            >
+              {tab}
+            </button>
           ))}
-        </div>
+        </nav>
       </section>
-
-      <style jsx>{`
-        .page-shell {
-          max-width: 460px;
-          margin: 0 auto;
-          padding: 18px 16px 48px;
-          display: grid;
-          gap: 16px;
-        }
-        .hero-card,
-        .glass-card {
-          border-radius: 28px;
-          border: 1px solid var(--line);
-          background: rgba(255, 255, 255, 0.76);
-          backdrop-filter: blur(14px);
-          box-shadow: 0 18px 40px rgba(14, 39, 35, 0.08);
-          padding: 20px;
-        }
-        .hero-card {
-          background: linear-gradient(145deg, #142128, #175857, #12a388);
-          color: white;
-        }
-        .eyebrow,
-        .section-eyebrow {
-          margin-bottom: 8px;
-          font-size: 12px;
-          letter-spacing: 0.18em;
-          text-transform: uppercase;
-          opacity: 0.8;
-        }
-        h1,
-        h2,
-        p {
-          margin: 0;
-        }
-        h1 {
-          font-size: 34px;
-          line-height: 1.02;
-          margin-bottom: 10px;
-        }
-        h2 {
-          font-size: 24px;
-          line-height: 1.1;
-          margin-bottom: 10px;
-        }
-        p {
-          color: rgba(255, 255, 255, 0.84);
-        }
-        .glass-card p,
-        .helper-text,
-        .store-item p {
-          color: var(--muted);
-        }
-        .stack,
-        .metric-row,
-        .app-stack,
-        .store-list,
-        .auth-form {
-          display: grid;
-          gap: 12px;
-        }
-        .metric-row {
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          margin-top: 18px;
-        }
-        .metric-pill {
-          padding: 12px;
-          border-radius: 18px;
-          background: rgba(255, 255, 255, 0.16);
-          display: grid;
-          gap: 2px;
-        }
-        .metric-pill strong {
-          font-size: 18px;
-        }
-        .metric-pill span {
-          color: rgba(255,255,255,0.74);
-          font-size: 12px;
-        }
-        .segmented {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 8px;
-          padding: 6px;
-          border-radius: 18px;
-          background: rgba(17,25,38,0.05);
-        }
-        .segmented button,
-        .primary-button {
-          border: 0;
-          border-radius: 14px;
-          padding: 14px 16px;
-        }
-        .segmented button {
-          color: var(--muted);
-          background: transparent;
-        }
-        .segmented button[data-active="true"] {
-          background: white;
-          color: var(--ink);
-          box-shadow: 0 6px 16px rgba(17,25,38,0.08);
-        }
-        input,
-        textarea {
-          width: 100%;
-          border: 1px solid rgba(17,25,38,0.08);
-          border-radius: 18px;
-          padding: 15px 16px;
-          background: rgba(255,255,255,0.82);
-          outline: none;
-        }
-        textarea {
-          min-height: 120px;
-          resize: vertical;
-        }
-        .primary-button {
-          background: var(--accent-dark);
-          color: white;
-          font-weight: 700;
-        }
-        .dark-card {
-          background: linear-gradient(180deg, rgba(16,46,50,0.97), rgba(25,78,75,0.92));
-          color: white;
-        }
-        .dark-card p {
-          color: rgba(255,255,255,0.76);
-        }
-        .mini-card,
-        .store-item {
-          border-radius: 20px;
-          padding: 14px;
-        }
-        .mini-card {
-          background: rgba(255,255,255,0.08);
-        }
-        .mini-header,
-        .store-item {
-          display: flex;
-          justify-content: space-between;
-          gap: 12px;
-        }
-        .store-item {
-          align-items: center;
-          background: rgba(255,255,255,0.62);
-        }
-        .store-item span {
-          white-space: nowrap;
-          color: var(--accent-dark);
-          font-size: 13px;
-          font-weight: 700;
-        }
-        .helper-text {
-          font-size: 14px;
-        }
-      `}</style>
     </main>
+  );
+}
+
+function Metric({ label, value, compact = false }: { label: string; value: string; compact?: boolean }) {
+  return (
+    <div className={`metric ${compact ? "compact" : ""}`}>
+      <strong>{value}</strong>
+      <span>{label}</span>
+    </div>
+  );
+}
+
+function Chip({ children }: { children: ReactNode }) {
+  return <span className="chip">{children}</span>;
+}
+
+function StatusRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="status-row">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
   );
 }

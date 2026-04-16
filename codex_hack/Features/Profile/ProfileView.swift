@@ -10,27 +10,28 @@ struct ProfileView: View {
                     GlassCard {
                         VStack(alignment: .leading, spacing: 10) {
                             Text(appModel.session.profile.name)
-                                .font(.system(.title2, design: .rounded, weight: .bold))
+                                .font(.system(.title2, design: .serif, weight: .semibold))
                                 .foregroundStyle(AppTheme.ink)
                             Text(appModel.session.profile.email)
                                 .font(.subheadline)
                                 .foregroundStyle(AppTheme.slate)
                             HStack(spacing: 10) {
                                 MetricPill(label: "Role", value: appModel.session.profile.role)
-                                MetricPill(label: "Orgs", value: "\(appModel.session.profile.organizationCount)")
+                                MetricPill(label: "Teams", value: "\(appModel.session.profile.organizationCount)")
                             }
                         }
                     }
 
                     GlassCard {
                         SectionTitle(
-                            eyebrow: "Integrations",
-                            title: "Configuration checkpoints",
-                            subtitle: "These remain local placeholders until you provide platform keys."
+                            eyebrow: "Platform",
+                            title: "Connection status",
+                            subtitle: "The shell uses Supabase for auth and points at a separate backend for build and deployment jobs."
                         )
+
                         configRow("Supabase", isConfigured: AppConfig.hasAuthConfiguration)
                         configRow("Backend API", isConfigured: !AppConfig.backendBaseURL.isEmpty)
-                        configRow("Email Auth", isConfigured: AuthService.shared.isConfigured)
+                        configRow("Email login", isConfigured: AuthService.shared.isConfigured)
                     }
 
                     Button("Sign Out") {
@@ -40,8 +41,8 @@ struct ProfileView: View {
                 }
                 .padding(20)
             }
-            .background(AppTheme.background.ignoresSafeArea())
-            .navigationTitle("Profile")
+            .background(ShellBackground())
+            .navigationTitle("Account")
         }
     }
 
@@ -50,9 +51,9 @@ struct ProfileView: View {
             Text(title)
                 .foregroundStyle(AppTheme.ink)
             Spacer()
-            Text(isConfigured ? "Ready" : "Needs Keys")
+            Text(isConfigured ? "Ready" : "Needs setup")
                 .font(.caption.weight(.bold))
-                .foregroundStyle(isConfigured ? AppTheme.accent : AppTheme.rose)
+                .foregroundStyle(isConfigured ? AppTheme.success : AppTheme.rose)
         }
         .padding(.vertical, 4)
     }

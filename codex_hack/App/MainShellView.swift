@@ -36,6 +36,8 @@ struct MainShellView: View {
                 .tag(MainTab.profile)
         }
         .tint(AppTheme.accent)
+        .toolbarBackground(AppTheme.card, for: .tabBar)
+        .toolbarBackground(.visible, for: .tabBar)
     }
 }
 
