@@ -11,13 +11,13 @@ const schema = z.object({
   SUPABASE_URL: z.string().url().optional(),
   SUPABASE_ANON_KEY: z.string().optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
+  SUPABASE_DB_URL: z.string().optional(),
+  SUPABASE_DB_PASSWORD: z.string().optional(),
   VERCEL_TOKEN: z.string().optional(),
   VERCEL_PROJECT_ID: z.string().optional(),
   VERCEL_TEAM_ID: z.string().optional(),
   GITHUB_TOKEN: z.string().optional(),
-  GITHUB_ORG: z.string().optional(),
-  GOOGLE_CLIENT_ID: z.string().optional(),
-  GOOGLE_CLIENT_SECRET: z.string().optional()
+  GITHUB_ORG: z.string().optional()
 });
 
 export const env = schema.parse(process.env);

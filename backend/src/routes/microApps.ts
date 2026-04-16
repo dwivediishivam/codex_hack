@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { compilePrompt } from "../services/promptCompiler.js";
-import { createApp, createJob, listApps, listJobs } from "../services/mockStore.js";
+import { createApp, createJob, listApps, listJobs, listPublicApps } from "../services/appRepository.js";
 
 export const microAppsRouter = Router();
 
@@ -13,43 +13,78 @@ const createSchema = z.object({
   generationMode: z.string().min(2)
 });
 
-microAppsRouter.get("/", (_req, res) => {
-  res.json({ items: listApps() });
+microAppsRouter.get("/", (req, res) => {
+  void (async () => {
+    try {
+      const ownerId = typeof req.query.ownerId === "string" ? req.query.ownerId : undefined;
+      const items = await listApps(ownerId);
+      res.json({ items });
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  })();
 });
 
-microAppsRouter.get("/jobs", (_req, res) => {
-  res.json({ items: listJobs() });
+microAppsRouter.get("/jobs", (req, res) => {
+  void (async () => {
+    try {
+      const appId = typeof req.query.appId === "string" ? req.query.appId : undefined;
+      const items = await listJobs(appId);
+      res.json({ items });
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  })();
+});
+
+microAppsRouter.get("/public", (_req, res) => {
+  void (async () => {
+    try {
+      const items = await listPublicApps();
+      res.json({ items });
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  })();
 });
 
 microAppsRouter.post("/", (req, res) => {
-  const parsed = createSchema.safeParse(req.body);
+  void (async () => {
+    const parsed = createSchema.extend({ ownerId: z.string().min(2) }).safeParse(req.body);
 
-  if (!parsed.success) {
-    return res.status(400).json({
-      error: "Invalid request body",
-      details: parsed.error.flatten()
-    });
-  }
+    if (!parsed.success) {
+      return res.status(400).json({
+        error: "Invalid request body",
+        details: parsed.error.flatten()
+      });
+    }
 
-  const promptPackage = compilePrompt(parsed.data);
-  const app = createApp({
-    name: parsed.data.prompt.split(" ").slice(0, 3).join(" "),
-    summary: parsed.data.prompt,
-    visibility: parsed.data.visibility,
-    status: parsed.data.visibility === "public" ? "reviewing" : "building",
-    deploymentUrl: undefined
-  });
+    try {
+      const promptPackage = compilePrompt(parsed.data);
+      const app = await createApp({
+        ownerId: parsed.data.ownerId,
+        name: parsed.data.prompt.split(" ").slice(0, 3).join(" "),
+        summary: parsed.data.prompt,
+        visibility: parsed.data.visibility,
+        audience: parsed.data.audience,
+        category: parsed.data.category,
+        generationMode: parsed.data.generationMode
+      });
 
-  const job = createJob({
-    appId: app.id,
-    type: "create",
-    status: "queued",
-    prompt: parsed.data.prompt
-  });
+      const job = await createJob({
+        appId: app.id,
+        type: "create",
+        prompt: parsed.data.prompt,
+        systemPrompt: promptPackage.systemPrompt
+      });
 
-  return res.status(201).json({
-    app,
-    job,
-    promptPackage
-  });
+      return res.status(201).json({
+        app,
+        job,
+        promptPackage
+      });
+    } catch (error) {
+      return res.status(500).json({ error: (error as Error).message });
+    }
+  })();
 });
