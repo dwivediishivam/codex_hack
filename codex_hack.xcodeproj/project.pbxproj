@@ -260,21 +260,16 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				BACKEND_BASE_URL = "http://localhost:8080";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 994RXHZ382;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_BACKEND_BASE_URL = "http://localhost:8080";
+				GENERATE_INFOPLIST_FILE = NO;
+				GOOGLE_CLIENT_ID = "";
+				INFOPLIST_FILE = App-Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Foundry;
-				INFOPLIST_KEY_GOOGLE_CLIENT_ID = "";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
-				INFOPLIST_KEY_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhnd2N2bWtlcWFtbXNkYmxnZXpmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMTc3MzYsImV4cCI6MjA5MTg5MzczNn0.ZtrDeRwRo02GctrhZyjgl01IR-2dmfc5XeODvPY2dLg";
-				INFOPLIST_KEY_SUPABASE_URL = "https://hgwcvmkeqammsdblgezf.supabase.co";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -283,6 +278,8 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "tds.codex-hack";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhnd2N2bWtlcWFtbXNkYmxnZXpmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMTc3MzYsImV4cCI6MjA5MTg5MzczNn0.ZtrDeRwRo02GctrhZyjgl01IR-2dmfc5XeODvPY2dLg";
+				SUPABASE_URL = "https://hgwcvmkeqammsdblgezf.supabase.co";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -297,21 +294,16 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				BACKEND_BASE_URL = "http://localhost:8080";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 994RXHZ382;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_BACKEND_BASE_URL = "http://localhost:8080";
+				GENERATE_INFOPLIST_FILE = NO;
+				GOOGLE_CLIENT_ID = "";
+				INFOPLIST_FILE = App-Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Foundry;
-				INFOPLIST_KEY_GOOGLE_CLIENT_ID = "";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
-				INFOPLIST_KEY_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhnd2N2bWtlcWFtbXNkYmxnZXpmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMTc3MzYsImV4cCI6MjA5MTg5MzczNn0.ZtrDeRwRo02GctrhZyjgl01IR-2dmfc5XeODvPY2dLg";
-				INFOPLIST_KEY_SUPABASE_URL = "https://hgwcvmkeqammsdblgezf.supabase.co";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -320,6 +312,8 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "tds.codex-hack";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhnd2N2bWtlcWFtbXNkYmxnZXpmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMTc3MzYsImV4cCI6MjA5MTg5MzczNn0.ZtrDeRwRo02GctrhZyjgl01IR-2dmfc5XeODvPY2dLg";
+				SUPABASE_URL = "https://hgwcvmkeqammsdblgezf.supabase.co";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
