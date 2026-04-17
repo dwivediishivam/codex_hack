@@ -3,8 +3,10 @@ import { Router } from "express";
 import { z } from "zod";
 import { compilePrompt } from "../services/promptCompiler.js";
 import { getAppById, createApp, createJob, listApps, listJobs, listPublicApps } from "../services/appRepository.js";
-import { generateAppSpec } from "../services/appSpecGenerator.js";
-import { readGeneratedAppSpec, writeGeneratedAppSpec } from "../services/generatedAppStore.js";
+import { env } from "../config/env.js";
+import { buildHostedAppConfig } from "../services/hostedAppGenerator.js";
+import { readGeneratedAppDocument, writeGeneratedAppDocument } from "../services/generatedAppStore.js";
+import type { StoredGeneratedApp } from "../types/hostedApp.js";
 
 export const microAppsRouter = Router();
 
@@ -64,8 +66,12 @@ microAppsRouter.get("/:id", (req, res) => {
         return res.status(404).json({ error: "App not found" });
       }
 
-      const spec = await readGeneratedAppSpec(req.params.id);
-      return res.json({ app, spec });
+      const document = await readGeneratedAppDocument<StoredGeneratedApp>(req.params.id);
+      if (document.mode === "spec") {
+        return res.json({ app, spec: document.spec });
+      }
+
+      return res.json({ app, hostedApp: document });
     } catch (error) {
       return res.status(404).json({ error: (error as Error).message });
     }
@@ -118,31 +124,31 @@ microAppsRouter.post("/", (req, res) => {
       }
 
       const id = randomUUID();
-      const spec = await generateAppSpec(parsed.data.prompt);
-      await writeGeneratedAppSpec(id, spec);
+      const hostedApp = await buildHostedAppConfig(parsed.data.prompt, parsed.data.ownerId);
+      await writeGeneratedAppDocument(id, hostedApp);
 
       const app = await createApp({
         id,
         ownerId: parsed.data.ownerId,
-        name: spec.name,
-        summary: spec.summary,
+        name: hostedApp.name,
+        summary: hostedApp.summary,
         visibility: "private",
         audience: "personal",
-        category: "custom",
-        generationMode: "instant",
+        category: hostedApp.kind === "persistent_tracker" ? "custom" : "utility",
+        generationMode: "hosted-runtime",
         status: "ready",
-        deploymentUrl: buildGeneratedAppPath(id)
+        deploymentUrl: buildGeneratedAppUrl(id, parsed.data.ownerId)
       });
 
       const job = await createJob({
         appId: app.id,
         type: "create",
         prompt: parsed.data.prompt,
-        systemPrompt: "generated-app-spec",
+        systemPrompt: `hosted-app:${hostedApp.kind}`,
         status: "completed"
       });
 
-      return res.status(201).json({ app, spec, job });
+      return res.status(201).json({ app, hostedApp, job });
     } catch (error) {
       return res.status(500).json({ error: (error as Error).message });
     }
@@ -163,8 +169,10 @@ function isManagedCreateRequest(value: unknown): value is z.infer<typeof managed
   );
 }
 
-function buildGeneratedAppPath(id: string) {
-  return `/micro-apps/custom/${id}`;
+function buildGeneratedAppUrl(id: string, ownerId: string) {
+  const baseUrl = env.APP_BASE_URL.replace(/\/$/, "");
+  const encodedOwnerId = encodeURIComponent(ownerId);
+  return `${baseUrl}/micro-app-hosted/${id}?ownerId=${encodedOwnerId}`;
 }
 
 function suggestName(prompt: string) {

@@ -3,6 +3,7 @@ import express from "express";
 import { env } from "./config/env.js";
 import { codexRouter } from "./routes/codex.js";
 import { healthRouter } from "./routes/health.js";
+import { hostedAppsApiRouter, hostedAppsRouter } from "./routes/hostedApps.js";
 import { microAppsRouter } from "./routes/microApps.js";
 
 const app = express();
@@ -14,12 +15,22 @@ app.get("/", (_req, res) => {
   res.json({
     name: "Foundry API",
     environment: env.NODE_ENV,
-    endpoints: ["/health", "/api/micro-apps", "/api/micro-apps/:id", "/api/micro-apps/jobs", "/api/codex/plan"]
+    endpoints: [
+      "/health",
+      "/api/micro-apps",
+      "/api/micro-apps/:id",
+      "/api/micro-apps/jobs",
+      "/api/hosted-apps/:id/state",
+      "/micro-app-hosted/:id",
+      "/api/codex/plan"
+    ]
   });
 });
 
 app.use("/health", healthRouter);
 app.use("/api/micro-apps", microAppsRouter);
+app.use("/api/hosted-apps", hostedAppsApiRouter);
+app.use("/micro-app-hosted", hostedAppsRouter);
 app.use("/api/codex", codexRouter);
 
 app.listen(env.PORT, () => {

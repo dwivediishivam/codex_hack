@@ -14,6 +14,7 @@ const schema = z.object({
   CODEX_WORKSPACE_ROOT: z.string().optional(),
   CODEX_TIMEOUT_MS: z.coerce.number().default(120000),
   GENERATED_APPS_BUCKET: z.string().default("generated-apps"),
+  GENERATED_APP_USER_DATA_BUCKET: z.string().default("generated-app-user-data"),
   SUPABASE_URL: z.string().url().optional(),
   SUPABASE_ANON_KEY: z.string().optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),

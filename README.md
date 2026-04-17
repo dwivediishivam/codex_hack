@@ -112,7 +112,7 @@ Foundry is built as a hybrid platform:
 
 - `SwiftUI` native shell for the iOS app
 - `Supabase` for authentication and platform data
-- `Render` backend API for generation jobs and generated app storage
+- `Render` backend API for generation jobs, generated app storage, and hosted micro-app runtime pages
 - `Emergent` or `Vercel` frontend hosting for the web shell
 - `Codex` as the generation and build agent
 
@@ -140,7 +140,7 @@ Open it on a phone-sized screen for the intended experience.
 - `web/`
   The mobile-focused frontend shell, deployable independently on Emergent or Vercel
 - `backend/`
-  The standalone API for app creation, generation state, and generated app retrieval
+  The standalone API for app creation, generation state, generated app retrieval, and hosted utility app execution
 
 ## Deployment
 

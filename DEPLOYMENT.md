@@ -3,7 +3,7 @@
 ## Current Split
 
 - `web/` is a pure frontend.
-- `backend/` owns all app generation, Supabase writes, and generated app spec storage.
+- `backend/` owns all app generation, Supabase writes, generated app storage, and hosted micro-app runtime pages.
 - `Supabase` remains the shared auth, database, and object storage layer.
 
 This means the frontend can now run on `Emergent`, `Vercel`, or both at the same time, as long as both point at the same backend URL.
@@ -54,6 +54,7 @@ OPENAI_MODEL=gpt-4.1-mini
 SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
 GENERATED_APPS_BUCKET=generated-apps
+GENERATED_APP_USER_DATA_BUCKET=generated-app-user-data
 ```
 
 Optional backend variables:
@@ -75,15 +76,15 @@ GITHUB_ORG=
 
 ## Frontend Portability
 
-Generated custom apps now store `deployment_url` as a relative path like `/micro-apps/custom/<id>`.
+Generated custom apps now store `deployment_url` as an absolute backend-hosted URL like:
 
-That keeps links portable across:
+`https://your-backend-service.onrender.com/micro-app-hosted/<id>?ownerId=<user>`
 
-- Emergent frontend
-- Vercel frontend
-- local frontend
+That means:
 
-Each frontend opens the same backend-backed app detail page on its own domain.
+- the frontend shell stays unchanged
+- Emergent and Vercel both open the same live backend-hosted micro app
+- real micro-app capabilities can be added in backend only
 
 ## Deploy Commands
 
