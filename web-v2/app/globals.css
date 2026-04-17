@@ -1,0 +1,271 @@
+:root {
+  --bg: #f5efe5;
+  --bg-strong: #eef5ff;
+  --panel: rgba(255, 255, 255, 0.84);
+  --panel-strong: rgba(255, 255, 255, 0.96);
+  --line: rgba(15, 23, 42, 0.12);
+  --text: #0f172a;
+  --muted: #5b6475;
+  --accent: #ec5b2a;
+  --accent-dark: #c74317;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background:
+    radial-gradient(circle at top left, rgba(236, 91, 42, 0.16), transparent 24%),
+    radial-gradient(circle at bottom right, rgba(42, 117, 236, 0.14), transparent 22%),
+    linear-gradient(180deg, var(--bg), var(--bg-strong));
+  color: var(--text);
+  font-family: var(--font-sans), sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+.page {
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.shell {
+  width: min(1120px, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 18px;
+}
+
+.top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.brand {
+  display: grid;
+  gap: 8px;
+}
+
+.brand-badge,
+.tiny-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.brand h1,
+.card h2,
+.card h3 {
+  margin: 0;
+  letter-spacing: -0.04em;
+}
+
+.brand h1 {
+  font-size: clamp(2.8rem, 7vw, 5.2rem);
+  line-height: 0.92;
+}
+
+.brand p,
+.card p,
+.card li,
+.helper,
+.empty {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 18px;
+}
+
+.stack {
+  display: grid;
+  gap: 14px;
+}
+
+.card {
+  border-radius: 28px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: 0 24px 72px rgba(15, 23, 42, 0.1);
+  padding: 20px;
+  backdrop-filter: blur(12px);
+}
+
+.hero-card {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.94), rgba(255,255,255,0.84)),
+    radial-gradient(circle at top right, rgba(236, 91, 42, 0.18), transparent 30%);
+}
+
+.auth-form,
+.create-form {
+  display: grid;
+  gap: 12px;
+}
+
+.segment {
+  display: flex;
+  gap: 8px;
+  padding: 4px;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.7);
+}
+
+.segment button,
+.secondary-button,
+.ghost-button {
+  border: 0;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text);
+}
+
+.segment button {
+  flex: 1 1 auto;
+  padding: 12px 14px;
+  border-radius: 14px;
+}
+
+.segment button.active,
+.primary-button {
+  background: var(--accent);
+  color: white;
+}
+
+.primary-button,
+.secondary-button,
+.ghost-button {
+  border-radius: 18px;
+  padding: 14px 16px;
+  text-align: center;
+}
+
+.primary-button {
+  border: 0;
+}
+
+.primary-button:hover {
+  background: var(--accent-dark);
+}
+
+.secondary-button {
+  background: rgba(255,255,255,0.82);
+  border: 1px solid var(--line);
+}
+
+.ghost-button {
+  border: 1px dashed var(--line);
+}
+
+input,
+textarea {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: var(--panel-strong);
+  color: var(--text);
+}
+
+textarea {
+  min-height: 220px;
+  resize: vertical;
+}
+
+.helper-list {
+  display: grid;
+  gap: 10px;
+  padding-left: 18px;
+  margin: 0;
+}
+
+.status-box,
+.app-item,
+.note {
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.8);
+  padding: 16px;
+}
+
+.status-box strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.app-item {
+  display: grid;
+  gap: 10px;
+}
+
+.app-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.app-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.error {
+  color: #b42318;
+  font-size: 0.92rem;
+}
+
+.top-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .top-actions {
+    justify-content: flex-start;
+  }
+}

@@ -4,6 +4,7 @@ import { env } from "./config/env.js";
 import { codexRouter } from "./routes/codex.js";
 import { healthRouter } from "./routes/health.js";
 import { hostedAppsApiRouter, hostedAppsRouter } from "./routes/hostedApps.js";
+import { liveAppsV2HostedApiRouter, liveAppsV2HostedRouter, liveAppsV2Router } from "./routes/liveAppsV2.js";
 import { microAppsRouter } from "./routes/microApps.js";
 
 const app = express();
@@ -20,7 +21,11 @@ app.get("/", (_req, res) => {
       "/api/micro-apps",
       "/api/micro-apps/:id",
       "/api/micro-apps/jobs",
+      "/api/v2/apps",
+      "/api/v2/apps/:id",
+      "/api/v2/hosted/:id/state",
       "/api/hosted-apps/:id/state",
+      "/v2-hosted/:id",
       "/micro-app-hosted/:id",
       "/api/codex/plan"
     ]
@@ -29,7 +34,10 @@ app.get("/", (_req, res) => {
 
 app.use("/health", healthRouter);
 app.use("/api/micro-apps", microAppsRouter);
+app.use("/api/v2/apps", liveAppsV2Router);
+app.use("/api/v2/hosted", liveAppsV2HostedApiRouter);
 app.use("/api/hosted-apps", hostedAppsApiRouter);
+app.use("/v2-hosted", liveAppsV2HostedRouter);
 app.use("/micro-app-hosted", hostedAppsRouter);
 app.use("/api/codex", codexRouter);
 
