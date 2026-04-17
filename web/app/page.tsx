@@ -3,6 +3,7 @@
 import { createClient, type Session } from "@supabase/supabase-js";
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { buildApiUrl } from "../lib/api";
 
 type Tab = "Create" | "Apps" | "Guide" | "Store" | "Profile";
 type StoreCategory = "All" | "Finance" | "Creative";
@@ -26,7 +27,7 @@ type OwnedApp = {
 };
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://hgwcvmkeqammsdblgezf.supabase.co",
+  process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://example.supabase.co",
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""
 );
 
@@ -117,7 +118,7 @@ export default function HomePage() {
 
     void (async () => {
       try {
-        const response = await fetch(`/api/micro-apps?ownerId=${encodeURIComponent(userEmail)}`, {
+        const response = await fetch(buildApiUrl(`/api/micro-apps?ownerId=${encodeURIComponent(userEmail)}`), {
           cache: "no-store"
         });
 
@@ -208,7 +209,7 @@ export default function HomePage() {
     }, 900);
 
     try {
-      const response = await fetch("/api/micro-apps", {
+      const response = await fetch(buildApiUrl("/api/micro-apps"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

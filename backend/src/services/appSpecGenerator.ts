@@ -1,5 +1,6 @@
 import OpenAI from "openai";
-import type { GeneratedAppSpec } from "../generated-apps";
+import { env } from "../config/env.js";
+import type { GeneratedAppSpec } from "../types/generatedApp.js";
 
 const outputSchema = {
   name: "foundry_generated_app",
@@ -88,7 +89,7 @@ Rules:
 `.trim();
 
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
-const defaultModel = process.env.OPENAI_MODEL ?? "gpt-4.1-mini";
+const defaultModel = env.OPENAI_MODEL;
 
 export async function generateAppSpec(prompt: string): Promise<GeneratedAppSpec> {
   if (!openai) {
@@ -112,7 +113,7 @@ export async function generateAppSpec(prompt: string): Promise<GeneratedAppSpec>
       return JSON.parse(response.output_text) as GeneratedAppSpec;
     }
   } catch {
-    // Fallback below keeps creation working even if the model call fails.
+    // Keep app creation working when the model call is unavailable.
   }
 
   return buildFallbackSpec(prompt);

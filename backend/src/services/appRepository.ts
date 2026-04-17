@@ -3,12 +3,14 @@ import { AppVisibility, GenerationJobRecord, JobType, MicroAppRecord } from "../
 import {
   createLocalApp,
   createLocalJob,
+  getLocalApp,
   listLocalApps,
   listLocalJobs,
   listLocalPublicApps
 } from "./localStore.js";
 
 interface CreateAppInput {
+  id?: string;
   ownerId: string;
   name: string;
   summary: string;
@@ -16,13 +18,18 @@ interface CreateAppInput {
   audience: string;
   category: string;
   generationMode: string;
+  status?: MicroAppRecord["status"];
+  deploymentUrl?: string | null;
 }
 
 interface CreateJobInput {
+  id?: string;
   appId: string;
   type: JobType;
   prompt: string;
   systemPrompt: string;
+  status?: GenerationJobRecord["status"];
+  createdAt?: string;
 }
 
 let repositoryMode: "supabase" | "local" | null = null;
@@ -74,6 +81,24 @@ export async function listPublicApps() {
   return (data ?? []) as MicroAppRecord[];
 }
 
+export async function getAppById(id: string) {
+  if (await useLocalRepository()) {
+    return getLocalApp(id);
+  }
+
+  const { data, error } = await supabaseAdmin.from("micro_apps").select("*").eq("id", id).single();
+  if (error) {
+    if (shouldFallback(error)) {
+      repositoryMode = "local";
+      return getLocalApp(id);
+    }
+
+    throw error;
+  }
+
+  return data as MicroAppRecord;
+}
+
 export async function createApp(input: CreateAppInput) {
   if (await useLocalRepository()) {
     return createLocalApp(input);
@@ -82,6 +107,7 @@ export async function createApp(input: CreateAppInput) {
   const { data, error } = await supabaseAdmin
     .from("micro_apps")
     .insert({
+      id: input.id,
       owner_id: input.ownerId,
       name: input.name,
       summary: input.summary,
@@ -89,7 +115,8 @@ export async function createApp(input: CreateAppInput) {
       audience: input.audience,
       category: input.category,
       generation_mode: input.generationMode,
-      status: input.visibility === "public" ? "reviewing" : "building"
+      status: input.status ?? (input.visibility === "public" ? "reviewing" : "building"),
+      deployment_url: input.deploymentUrl
     })
     .select()
     .single();
@@ -114,11 +141,13 @@ export async function createJob(input: CreateJobInput) {
   const { data, error } = await supabaseAdmin
     .from("generation_jobs")
     .insert({
+      id: input.id,
       app_id: input.appId,
       type: input.type,
-      status: "queued",
+      status: input.status ?? "queued",
       prompt: input.prompt,
-      system_prompt: input.systemPrompt
+      system_prompt: input.systemPrompt,
+      created_at: input.createdAt
     })
     .select()
     .single();

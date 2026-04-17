@@ -1,0 +1,105 @@
+# Foundry Deployment
+
+## Current Split
+
+- `web/` is a pure frontend.
+- `backend/` owns all app generation, Supabase writes, and generated app spec storage.
+- `Supabase` remains the shared auth, database, and object storage layer.
+
+This means the frontend can now run on `Emergent`, `Vercel`, or both at the same time, as long as both point at the same backend URL.
+
+## Recommended Hosting
+
+- `Frontend`: Emergent
+- `Frontend mirror`: Vercel
+- `Backend API`: Render
+- `Data/Auth/Storage`: Supabase
+
+## Emergent Frontend Env Vars
+
+Set these in the Emergent project for `web/`:
+
+```bash
+NEXT_PUBLIC_API_BASE_URL=https://your-backend-service.onrender.com
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+```
+
+Important:
+
+- Do not put `SUPABASE_SERVICE_ROLE_KEY` in Emergent.
+- Do not put `OPENAI_API_KEY` in Emergent.
+- The frontend no longer needs backend-only secrets.
+
+## Vercel Frontend Env Vars
+
+If you keep the existing Vercel frontend live, use the same three variables there:
+
+```bash
+NEXT_PUBLIC_API_BASE_URL=https://your-backend-service.onrender.com
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+```
+
+## Render Backend Env Vars
+
+Set these in the Render service for `backend/`:
+
+```bash
+NODE_ENV=production
+PORT=10000
+APP_BASE_URL=https://your-backend-service.onrender.com
+OPENAI_API_KEY=your-openai-api-key
+OPENAI_MODEL=gpt-4.1-mini
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+GENERATED_APPS_BUCKET=generated-apps
+```
+
+Optional backend variables:
+
+```bash
+SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_DB_URL=postgresql://...
+SUPABASE_DB_PASSWORD=...
+CODEX_BIN=codex
+CODEX_MODEL=
+CODEX_WORKSPACE_ROOT=
+CODEX_TIMEOUT_MS=120000
+VERCEL_TOKEN=
+VERCEL_PROJECT_ID=
+VERCEL_TEAM_ID=
+GITHUB_TOKEN=
+GITHUB_ORG=
+```
+
+## Frontend Portability
+
+Generated custom apps now store `deployment_url` as a relative path like `/micro-apps/custom/<id>`.
+
+That keeps links portable across:
+
+- Emergent frontend
+- Vercel frontend
+- local frontend
+
+Each frontend opens the same backend-backed app detail page on its own domain.
+
+## Deploy Commands
+
+### Frontend
+
+```bash
+cd web
+npm install
+npm run build
+```
+
+### Backend
+
+```bash
+cd backend
+npm install
+npm run build
+npm start
+```

@@ -29,7 +29,13 @@ export async function listLocalPublicApps() {
   return sortByUpdated(state.microApps.filter((app) => app.visibility === "public"));
 }
 
+export async function getLocalApp(id: string) {
+  const state = await loadState();
+  return state.microApps.find((app) => app.id === id) ?? null;
+}
+
 export async function createLocalApp(input: {
+  id?: string;
   ownerId: string;
   name: string;
   summary: string;
@@ -37,12 +43,14 @@ export async function createLocalApp(input: {
   audience: string;
   category: string;
   generationMode: string;
+  status?: MicroAppRecord["status"];
+  deploymentUrl?: string | null;
 }) {
   const state = await loadState();
   const now = new Date().toISOString();
 
   const app: MicroAppRecord = {
-    id: randomUUID(),
+    id: input.id ?? randomUUID(),
     owner_id: input.ownerId,
     name: input.name,
     summary: input.summary,
@@ -50,8 +58,8 @@ export async function createLocalApp(input: {
     audience: input.audience,
     category: input.category,
     generation_mode: input.generationMode,
-    status: input.visibility === "public" ? "reviewing" : "building",
-    deployment_url: deploymentURLForName(input.name),
+    status: input.status ?? (input.visibility === "public" ? "reviewing" : "building"),
+    deployment_url: input.deploymentUrl ?? deploymentURLForName(input.name),
     created_at: now,
     updated_at: now
   };
@@ -62,20 +70,23 @@ export async function createLocalApp(input: {
 }
 
 export async function createLocalJob(input: {
+  id?: string;
   appId: string;
   type: GenerationJobRecord["type"];
   prompt: string;
   systemPrompt: string;
+  status?: GenerationJobRecord["status"];
+  createdAt?: string;
 }) {
   const state = await loadState();
   const job: GenerationJobRecord = {
-    id: randomUUID(),
+    id: input.id ?? randomUUID(),
     app_id: input.appId,
     type: input.type,
-    status: "queued",
+    status: input.status ?? "queued",
     prompt: input.prompt,
     system_prompt: input.systemPrompt,
-    created_at: new Date().toISOString()
+    created_at: input.createdAt ?? new Date().toISOString()
   };
 
   state.generationJobs.unshift(job);

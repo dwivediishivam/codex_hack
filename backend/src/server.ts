@@ -14,7 +14,7 @@ app.get("/", (_req, res) => {
   res.json({
     name: "Foundry API",
     environment: env.NODE_ENV,
-    endpoints: ["/health", "/api/micro-apps", "/api/micro-apps/jobs", "/api/codex/plan"]
+    endpoints: ["/health", "/api/micro-apps", "/api/micro-apps/:id", "/api/micro-apps/jobs", "/api/codex/plan"]
   });
 });
 

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import type { GeneratedAppRecord, GeneratedAppSpec, GeneratedEntry } from "../../../../lib/generated-apps";
+import { buildApiUrl } from "../../../../lib/api";
 
 type ViewId = "overview" | "capture" | "entries";
 
@@ -26,7 +27,7 @@ export default function CustomAppPage() {
     void (async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/micro-apps/${params.id}`, { cache: "no-store" });
+        const response = await fetch(buildApiUrl(`/api/micro-apps/${params.id}`), { cache: "no-store" });
         const payload = (await response.json()) as {
           error?: string;
           app?: GeneratedAppRecord;

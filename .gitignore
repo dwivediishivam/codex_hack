@@ -8,3 +8,4 @@ DerivedData
 .vercel
 .next
 backend/data/store.json
+backend/data/generated-app-specs

@@ -112,8 +112,8 @@ Foundry is built as a hybrid platform:
 
 - `SwiftUI` native shell for the iOS app
 - `Supabase` for authentication and platform data
-- `Render`-style backend orchestration for generation jobs
-- `Vercel` deployment for mobile-first hosted app experiences
+- `Render` backend API for generation jobs and generated app storage
+- `Emergent` or `Vercel` frontend hosting for the web shell
 - `Codex` as the generation and build agent
 
 This architecture gives Foundry the best of both worlds:
@@ -138,20 +138,22 @@ Open it on a phone-sized screen for the intended experience.
 - `codex_hack/`
   The SwiftUI iOS application
 - `web/`
-  The mobile-focused web companion and live demo shell
+  The mobile-focused frontend shell, deployable independently on Emergent or Vercel
 - `backend/`
-  The orchestration layer for app creation, generation state, and deployment flow
+  The standalone API for app creation, generation state, and generated app retrieval
 
 ## Deployment
 
 Deployment is intentionally straightforward and split by surface:
 
 - iOS shell via Xcode / TestFlight flow
-- mobile web shell via Vercel
+- mobile web shell via Emergent or Vercel
 - backend via a Node host such as Render or Railway
 - auth and data via Supabase
 
 Environment configuration can be handled in the respective platform env files and Xcode build settings.
+
+See `DEPLOYMENT.md` for the current split-host setup and required environment variables.
 
 ## Vision
 
