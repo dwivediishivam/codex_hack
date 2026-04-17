@@ -1,4 +1,5 @@
 import { buildHostedAppConfig } from "./hostedAppGenerator.js";
+import { maybeRenderAiLiveBundle } from "./liveBundleAiRenderer.js";
 import type { LiveBundleV2Document } from "../types/liveBundleV2.js";
 import type { HostedAppConfig } from "../types/hostedApp.js";
 
@@ -11,13 +12,30 @@ export async function buildLiveBundleV2Document(input: {
   const focus = hostedApp.kind === "persistent_tracker"
     ? hostedApp.trackerSpec.focus
     : deriveFocusFromPrompt(input.prompt);
+  const fallbackHtml = renderLiveBundleHtml({
+    appId: input.appId,
+    prompt: input.prompt,
+    ownerId: input.ownerId,
+    focus,
+    hostedApp
+  });
+  const rendered = await maybeRenderAiLiveBundle({
+    appId: input.appId,
+    prompt: input.prompt,
+    ownerId: input.ownerId,
+    focus,
+    hostedApp,
+    fallbackHtml
+  });
+  hostedApp.name = rendered.name;
+  hostedApp.summary = rendered.summary;
 
   return {
     mode: "bundle_v2",
     version: 2,
     appId: input.appId,
-    name: hostedApp.name,
-    summary: hostedApp.summary,
+    name: rendered.name,
+    summary: rendered.summary,
     prompt: input.prompt,
     ownerId: input.ownerId,
     accent: hostedApp.accent,
@@ -25,13 +43,7 @@ export async function buildLiveBundleV2Document(input: {
     focus,
     createdAt: new Date().toISOString(),
     hostedApp,
-    bundleHtml: renderLiveBundleHtml({
-      appId: input.appId,
-      prompt: input.prompt,
-      ownerId: input.ownerId,
-      focus,
-      hostedApp
-    })
+    bundleHtml: rendered.html
   } satisfies LiveBundleV2Document;
 }
 
