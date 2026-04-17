@@ -1,7 +1,7 @@
 import { Router } from "express";
 import multer from "multer";
 import { z } from "zod";
-import { convertStructuredData, generateQrPng, imagesToPdf, textToPdf, transformImage } from "../services/hostedAppActions.js";
+import { convertStructuredData, generateQrPng, imagesToPdf, textToPdf, transformImage, transformPdf } from "../services/hostedAppActions.js";
 import { readGeneratedAppDocument } from "../services/generatedAppStore.js";
 import { readHostedAppState, writeHostedAppState } from "../services/hostedAppStateStore.js";
 import type { HostedAppConfig, StoredGeneratedApp } from "../types/hostedApp.js";
@@ -120,6 +120,44 @@ hostedAppsApiRouter.post("/:id/run/image-studio", upload.single("file"), (req, r
         watermark: typeof req.body.watermark === "string" ? req.body.watermark : undefined
       });
 
+      sendAttachment(res, transformed.buffer, transformed.filename, transformed.contentType);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  })();
+});
+
+const pdfStudioSchema = z.object({
+  trimTopPercent: z.coerce.number().min(0).max(90).optional().default(0),
+  trimBottomPercent: z.coerce.number().min(0).max(90).optional().default(0),
+  trimLeftPercent: z.coerce.number().min(0).max(90).optional().default(0),
+  trimRightPercent: z.coerce.number().min(0).max(90).optional().default(0),
+  preservePageSize: z
+    .union([z.literal("true"), z.literal("false"), z.boolean()])
+    .optional()
+    .transform((value) => value === undefined ? true : value === true || value === "true")
+});
+
+hostedAppsApiRouter.post("/:id/run/pdf-studio", upload.single("file"), (req, res) => {
+  void (async () => {
+    try {
+      const appId = normalizeParam(req.params.id);
+      const config = await readHostedConfig(appId);
+      if (config.kind !== "pdf_studio") {
+        return res.status(400).json({ error: "App is not a PDF studio tool" });
+      }
+
+      const file = req.file;
+      if (!file) {
+        return res.status(400).json({ error: "PDF file is required" });
+      }
+
+      const parsed = pdfStudioSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid pdf transform payload", details: parsed.error.flatten() });
+      }
+
+      const transformed = await transformPdf(file, parsed.data);
       sendAttachment(res, transformed.buffer, transformed.filename, transformed.contentType);
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });
@@ -486,6 +524,32 @@ function renderBody(config: HostedAppConfig) {
           <section id="status" class="status">Upload an image and process it on the backend.</section>
         </section>
       `;
+    case "pdf_studio":
+      return `
+        <section class="stack">
+          <section class="panel dropzone">
+            <input id="pdf-studio-file" type="file" accept="application/pdf" />
+            <div class="grid" style="margin-top:12px">
+              <input id="pdf-studio-top" type="number" min="0" max="90" value="${escapeHtml(String(config.pdfSpec.trimTopPercent))}" placeholder="Trim top %" />
+              <input id="pdf-studio-bottom" type="number" min="0" max="90" value="${escapeHtml(String(config.pdfSpec.trimBottomPercent))}" placeholder="Trim bottom %" />
+              <input id="pdf-studio-left" type="number" min="0" max="90" value="${escapeHtml(String(config.pdfSpec.trimLeftPercent))}" placeholder="Trim left %" />
+              <input id="pdf-studio-right" type="number" min="0" max="90" value="${escapeHtml(String(config.pdfSpec.trimRightPercent))}" placeholder="Trim right %" />
+            </div>
+            <label style="display:flex;gap:10px;align-items:center;margin-top:12px">
+              <input id="pdf-studio-preserve" type="checkbox" style="width:auto" ${config.pdfSpec.preservePageSize ? "checked" : ""} />
+              <span>Preserve original page size and leave trimmed areas blank</span>
+            </label>
+            <div class="row" style="margin-top:12px">
+              <button id="pdf-studio-run">Process PDF</button>
+            </div>
+          </section>
+          <section class="panel">
+            <strong>Live preset</strong>
+            <p style="margin-bottom:0">This app was created from your prompt and opens with its detected PDF edit settings already filled in.</p>
+          </section>
+          <section id="status" class="status">Upload a PDF and transform it on the backend.</section>
+        </section>
+      `;
     case "text_to_pdf":
       return `
         <section class="stack">
@@ -658,6 +722,28 @@ function renderClientScript(config: HostedAppConfig) {
             studioPreview.classList.remove('hidden');
             downloadBlob(blob, 'edited-image');
             showStatus('Image processed.');
+          } catch (error) {
+            showStatus(error.message, true);
+          }
+        });
+      `;
+    case "pdf_studio":
+      return `
+        const pdfStudioFile = document.getElementById('pdf-studio-file');
+        document.getElementById('pdf-studio-run')?.addEventListener('click', async () => {
+          if (!pdfStudioFile.files?.[0]) return;
+          showStatus('Processing PDF...');
+          try {
+            const formData = new FormData();
+            formData.append('file', pdfStudioFile.files[0]);
+            formData.append('trimTopPercent', document.getElementById('pdf-studio-top').value);
+            formData.append('trimBottomPercent', document.getElementById('pdf-studio-bottom').value);
+            formData.append('trimLeftPercent', document.getElementById('pdf-studio-left').value);
+            formData.append('trimRightPercent', document.getElementById('pdf-studio-right').value);
+            formData.append('preservePageSize', String(document.getElementById('pdf-studio-preserve').checked));
+            const blob = await fetchBlob('/api/hosted-apps/' + appId + '/run/pdf-studio', { method: 'POST', body: formData });
+            downloadBlob(blob, 'edited-document.pdf');
+            showStatus('PDF ready.');
           } catch (error) {
             showStatus(error.message, true);
           }

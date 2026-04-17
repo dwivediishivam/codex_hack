@@ -90,6 +90,14 @@ export async function transformImage(file: Express.Multer.File, options: ImageSt
   }
 }
 
+interface PdfStudioOptions {
+  trimTopPercent?: number;
+  trimBottomPercent?: number;
+  trimLeftPercent?: number;
+  trimRightPercent?: number;
+  preservePageSize?: boolean;
+}
+
 export async function textToPdf(input: { title: string; author?: string; text: string }) {
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
@@ -131,6 +139,60 @@ export async function textToPdf(input: { title: string; author?: string; text: s
   }
 
   return Buffer.from(await pdf.save());
+}
+
+export async function transformPdf(file: Express.Multer.File, options: PdfStudioOptions) {
+  const source = await PDFDocument.load(file.buffer);
+  const output = await PDFDocument.create();
+  const sourcePages = source.getPages();
+
+  if (sourcePages.length === 0) {
+    throw new Error("PDF has no pages");
+  }
+
+  for (const sourcePage of sourcePages) {
+    const { width, height } = sourcePage.getSize();
+    const trimTop = height * clamp((options.trimTopPercent ?? 0) / 100, 0, 0.9);
+    const trimBottom = height * clamp((options.trimBottomPercent ?? 0) / 100, 0, 0.9);
+    const trimLeft = width * clamp((options.trimLeftPercent ?? 0) / 100, 0, 0.9);
+    const trimRight = width * clamp((options.trimRightPercent ?? 0) / 100, 0, 0.9);
+    const boundedRight = Math.max(trimLeft + 1, width - trimRight);
+    const boundedTop = Math.max(trimBottom + 1, height - trimTop);
+    const croppedWidth = boundedRight - trimLeft;
+    const croppedHeight = boundedTop - trimBottom;
+
+    const embeddedPage = await output.embedPage(sourcePage, {
+      left: trimLeft,
+      bottom: trimBottom,
+      right: boundedRight,
+      top: boundedTop
+    });
+
+    if (options.preservePageSize ?? true) {
+      const page = output.addPage([width, height]);
+      page.drawPage(embeddedPage, {
+        x: trimLeft,
+        y: trimBottom,
+        width: croppedWidth,
+        height: croppedHeight
+      });
+      continue;
+    }
+
+    const page = output.addPage([croppedWidth, croppedHeight]);
+    page.drawPage(embeddedPage, {
+      x: 0,
+      y: 0,
+      width: croppedWidth,
+      height: croppedHeight
+    });
+  }
+
+  return {
+    buffer: Buffer.from(await output.save()),
+    filename: "edited-document.pdf",
+    contentType: "application/pdf"
+  };
 }
 
 export async function generateQrPng(text: string) {
