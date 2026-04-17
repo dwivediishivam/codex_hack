@@ -86,6 +86,17 @@ That means:
 - Emergent and Vercel both open the same live backend-hosted micro app
 - real micro-app capabilities can be added in backend only
 
+## Current Hosted Capability Set
+
+New generated hosted apps can resolve into working backend-driven tools such as:
+
+- image to PDF
+- image studio: resize, rotate, grayscale, watermark, convert format
+- text to PDF
+- QR code generation
+- CSV to JSON and JSON to CSV conversion
+- persistent tracker apps with saved backend state
+
 ## Deploy Commands
 
 ### Frontend

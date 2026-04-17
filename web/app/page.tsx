@@ -2,7 +2,7 @@
 
 import { createClient, type Session } from "@supabase/supabase-js";
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { type ReactNode, FormEvent, useEffect, useMemo, useState } from "react";
 import { buildApiUrl } from "../lib/api";
 
 type Tab = "Create" | "Apps" | "Guide" | "Store" | "Profile";
@@ -387,9 +387,9 @@ export default function HomePage() {
                       <p>{app.summary}</p>
                     </div>
                     <div className="row">
-                      <Link className="primary-button inline" href={app.route}>
+                      <AppLink className="primary-button inline" href={app.route}>
                         Open
-                      </Link>
+                      </AppLink>
                       {app.source === "created" ? (
                         <button
                           className="secondary-button inline"
@@ -453,9 +453,9 @@ export default function HomePage() {
                     <small>{app.detail}</small>
                   </div>
                   <div className="row">
-                    <Link className="primary-button inline" href={app.route}>
+                    <AppLink className="primary-button inline" href={app.route}>
                       Open
-                    </Link>
+                    </AppLink>
                     <button className="secondary-button inline" onClick={() => addStoreApp(app)}>
                       Add
                     </button>
@@ -521,6 +521,22 @@ function readStoreApps(email: string): OwnedApp[] {
 function writeStoreApps(email: string, apps: OwnedApp[]) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(`foundry.store.${email}`, JSON.stringify(apps));
+}
+
+function AppLink({ href, className, children }: { href: string; className?: string; children: ReactNode }) {
+  if (/^https?:\/\//.test(href)) {
+    return (
+      <a className={className} href={href}>
+        {children}
+      </a>
+    );
+  }
+
+  return (
+    <Link className={className} href={href}>
+      {children}
+    </Link>
+  );
 }
 
 function mergeOwnedApps(base: OwnedApp[], incoming: OwnedApp[]) {

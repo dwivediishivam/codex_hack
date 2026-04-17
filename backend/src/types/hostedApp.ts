@@ -2,6 +2,7 @@ import type { GeneratedAppSpec } from "./generatedApp.js";
 
 export type HostedAppKind =
   | "image_to_pdf"
+  | "image_studio"
   | "text_to_pdf"
   | "qr_generator"
   | "csv_json_converter"

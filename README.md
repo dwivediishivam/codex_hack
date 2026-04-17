@@ -16,6 +16,15 @@ Foundry lets users:
 - manage personal app collections in one account
 - launch hosted apps instantly from the same shell
 
+The current hosted runtime supports real backend-driven utilities, not just form mockups. That includes:
+
+- image to PDF
+- image editing and conversion
+- text to PDF
+- QR generation
+- CSV and JSON conversion
+- persistent trackers with saved state
+
 The product is designed for exactly the kinds of small, focused tools people repeatedly wish existed:
 
 - personal finance helpers
@@ -140,7 +149,7 @@ Open it on a phone-sized screen for the intended experience.
 - `web/`
   The mobile-focused frontend shell, deployable independently on Emergent or Vercel
 - `backend/`
-  The standalone API for app creation, generation state, generated app retrieval, and hosted utility app execution
+  The standalone API for app creation, generation state, generated app retrieval, hosted utility app execution, uploads, and backend file processing
 
 ## Deployment
 
