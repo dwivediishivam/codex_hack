@@ -145,21 +145,22 @@ function detectHostedAppKindHeuristically(prompt: string): HostedAppKind {
 }
 
 function preferUtilityName(kind: HostedAppKind, fallback: string) {
+  const promptAwareName = normalizeGeneratedName(fallback);
   switch (kind) {
     case "image_to_pdf":
-      return "Image To PDF";
+      return promptAwareName ?? "Image To PDF";
     case "image_studio":
-      return "Image Studio";
+      return promptAwareName ?? "Image Studio";
     case "pdf_studio":
-      return fallback.toLowerCase().includes("pdf") ? fallback : "PDF Studio";
+      return promptAwareName?.toLowerCase().includes("pdf") ? promptAwareName : promptAwareName ?? "PDF Studio";
     case "text_to_pdf":
-      return "Text To PDF";
+      return promptAwareName ?? "Text To PDF";
     case "qr_generator":
-      return "QR Generator";
+      return promptAwareName ?? "QR Generator";
     case "csv_json_converter":
-      return "CSV JSON Converter";
+      return promptAwareName ?? "CSV JSON Converter";
     case "unit_converter":
-      return "Unit Converter";
+      return promptAwareName ?? "Unit Converter";
     case "persistent_tracker":
       return fallback;
   }
@@ -254,4 +255,27 @@ function extractDirectionalPercent(prompt: string, direction: "top" | "bottom" |
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
+}
+
+function normalizeGeneratedName(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const lower = trimmed.toLowerCase();
+  if (
+    lower === "new app" ||
+    lower === "image studio" ||
+    lower === "image to pdf" ||
+    lower === "text to pdf" ||
+    lower === "qr generator" ||
+    lower === "csv json converter" ||
+    lower === "unit converter" ||
+    lower === "persistent tracker"
+  ) {
+    return null;
+  }
+
+  return trimmed.length <= 48 ? trimmed : `${trimmed.slice(0, 45).trimEnd()}...`;
 }

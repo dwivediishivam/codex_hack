@@ -59,7 +59,7 @@ export async function createLocalApp(input: {
     category: input.category,
     generation_mode: input.generationMode,
     status: input.status ?? (input.visibility === "public" ? "reviewing" : "building"),
-    deployment_url: input.deploymentUrl ?? deploymentURLForName(input.name),
+    deployment_url: input.deploymentUrl ?? null,
     created_at: now,
     updated_at: now
   };
@@ -172,13 +172,4 @@ function buildSeedState(): LocalStoreState {
 
 function sortByUpdated(items: MicroAppRecord[]) {
   return [...items].sort((left, right) => right.updated_at.localeCompare(left.updated_at));
-}
-
-function deploymentURLForName(name: string) {
-  const slug = name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-
-  return slug ? `${publicDeploymentUrl}/micro-apps/${slug}` : publicDeploymentUrl;
 }

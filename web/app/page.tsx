@@ -235,8 +235,17 @@ export default function HomePage() {
         source: "created"
       };
 
-      setOwnedApps((current) => mergeOwnedApps(current, [ownedApp]));
+      setOwnedApps((current) => mergeOwnedApps([ownedApp], current));
       setPrompt("");
+      const nextRoute = ownedApp.route;
+      window.setTimeout(() => {
+        if (/^https?:\/\//.test(nextRoute)) {
+          window.location.assign(nextRoute);
+          return;
+        }
+
+        window.location.assign(nextRoute);
+      }, 120);
       setActiveTab("Apps");
     } catch (error) {
       setCreateError(error instanceof Error ? error.message : "Could not create the app.");
